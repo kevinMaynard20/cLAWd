@@ -1,0 +1,121 @@
+# Build cLAWd.app + DMG on every tag push, attach to a GitHub Release.
+#
+# Trigger:  push a tag like `v0.1.0` (`git tag v0.1.0 && git push origin v0.1.0`).
+# Output:   GitHub Release at /releases/tag/<tag> carrying:
+#             - cLAWd-<tag>-aarch64.dmg   (Apple Silicon)
+#             - cLAWd-<tag>-x86_64.dmg    (Intel — built only if INTEL=1 set)
+#             - cLAWd-<tag>.app.tar.gz    (raw .app for users who hate DMGs)
+#
+# Why one runner per arch: macos-14 is Apple Silicon, macos-13 is Intel.
+# GitHub doesn't expose universal-binary tooling out of the box; building
+# both targets on Apple Silicon would need cross-compilation of pymupdf's
+# C extension which is fragile. Two parallel runners is simpler.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:    # let the user trigger manually too, e.g. for testing
+
+permissions:
+  contents: write       # required to create releases + upload assets
+
+jobs:
+  build:
+    name: Build (${{ matrix.label }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            label: aarch64
+            target_triple: aarch64-apple-darwin
+          # Intel build is opt-in: set repo variable BUILD_INTEL=1 to enable.
+          # The Apple Silicon DMG is the primary artefact — most users since
+          # 2020 are on M-series. Drop the `if:` to always build both.
+          - runner: macos-13
+            label: x86_64
+            target_triple: x86_64-apple-darwin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Skip Intel build unless requested
+        if: matrix.label == 'x86_64' && vars.BUILD_INTEL != '1'
+        run: |
+          echo "Intel build skipped — set repo variable BUILD_INTEL=1 to enable."
+          exit 78    # neutral (skipped) exit; doesn't fail the workflow
+
+      # ---------- toolchain ----------
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target_triple }}
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/web/src-tauri -> target
+
+      - name: Setup Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Setup Node + pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+
+      # ---------- build ----------
+
+      - name: Create venv + install backend deps + PyInstaller
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --upgrade pip
+          .venv/bin/pip install -e '.[dev]' pyinstaller
+
+      - name: Install web deps
+        working-directory: apps/web
+        run: pnpm install --frozen-lockfile
+
+      - name: Build .app + DMG
+        run: bash scripts/build_app.sh
+
+      # ---------- upload ----------
+
+      - name: Stage release assets
+        id: stage
+        run: |
+          set -eux
+          BUNDLE_DIR="apps/web/src-tauri/target/release/bundle"
+          # Tauri names the DMG cLAWd_<version>_<arch>.dmg; we rename to
+          # the GitHub-friendly cLAWd-<tag>-<label>.dmg so the install
+          # script can resolve it deterministically.
+          TAG="${GITHUB_REF_NAME:-untagged}"
+          DMG_SRC=$(ls "$BUNDLE_DIR/dmg/"*.dmg | head -n 1)
+          DMG_DST="cLAWd-${TAG}-${{ matrix.label }}.dmg"
+          cp "$DMG_SRC" "$DMG_DST"
+          # Also tar the .app for users who'd rather skip mounting a DMG.
+          APP_DST="cLAWd-${TAG}-${{ matrix.label }}.app.tar.gz"
+          tar -czf "$APP_DST" -C "$BUNDLE_DIR/macos" "cLAWd.app"
+          echo "dmg=$DMG_DST" >> "$GITHUB_OUTPUT"
+          echo "app=$APP_DST" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ steps.stage.outputs.dmg }}
+            ${{ steps.stage.outputs.app }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true

@@ -4,6 +4,20 @@ Local-first study system for 1L doctrinal courses. Ingest a textbook once, inter
 
 **Canonical spec:** `spec.md`. **Build progress:** `CHECKLIST.md`. **Working agreement:** `CLAUDE.md`.
 
+## Install (Mac)
+
+One paste in your terminal:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/kevinMaynard20/cLAWd/main/install.sh | bash
+```
+
+Downloads the latest pre-built `.dmg` from [Releases](https://github.com/kevinMaynard20/cLAWd/releases/latest), copies `cLAWd.app` into `/Applications`, and launches it. ~150 MB. No Python, Node, or Rust needed on your Mac.
+
+Prefer to download manually? Grab the `.dmg` for your architecture (`aarch64` for Apple Silicon, `x86_64` for Intel) from the [latest release page](https://github.com/kevinMaynard20/cLAWd/releases/latest), double-click, drag `cLAWd.app` to `/Applications`.
+
+User data lives at `~/Library/Application Support/cLAWd/`. Closing the window kills the backend cleanly. The first launch asks for your Anthropic API key (stored in macOS Keychain).
+
 ## Status
 
 Phase 0 (bootstrap) in progress. No features are working yet.
