@@ -68,28 +68,23 @@ echo "→ running PyInstaller (this can take a few minutes)…"
     --distpath "$DIST_DIR" \
     "$SPEC_FILE"
 
-# PyInstaller produces $DIST_DIR/cLAWd-backend (a directory with the binary
-# inside, since we use `--onedir` in the spec for faster startup). Tauri
-# wants a single file in `externalBin`, but it does support directories
-# too via `binaries/<name>/...`. We move the whole onedir output to
-# src-tauri/binaries/cLAWd-backend-<triple>/ and Tauri will pick the
-# entry-point binary.
+# Spec is in --onefile mode → PyInstaller drops a single self-extracting
+# executable at $DIST_DIR/cLAWd-backend (no `_internal/` directory).
+# Tauri's externalBin resolver wants the file at:
+#   apps/web/src-tauri/binaries/<name>-<target-triple>
+# without a directory wrapper.
 OUT_DIR="$REPO_ROOT/apps/web/src-tauri/binaries"
 mkdir -p "$OUT_DIR"
-rm -rf "$OUT_DIR/cLAWd-backend-$TARGET_TRIPLE"
-mv "$DIST_DIR/cLAWd-backend" "$OUT_DIR/cLAWd-backend-$TARGET_TRIPLE"
-# Tauri's sidecar resolver expects the entry binary at
-# `<name>-<triple>` (without extension) — we move it up to satisfy that.
-# We keep the rest of the onedir as a sibling _internal directory.
-ENTRY="$OUT_DIR/cLAWd-backend-$TARGET_TRIPLE/cLAWd-backend"
-if [[ -x "$ENTRY" ]]; then
-    # Symlink or move the entry binary up next to the directory so Tauri
-    # finds it at `binaries/cLAWd-backend-<triple>` like its docs show.
-    cp -p "$ENTRY" "$OUT_DIR/cLAWd-backend-$TARGET_TRIPLE.bin"
-    # Tauri actually wants the directory itself named with the triple
-    # suffix when the externalBin path ends without a triple — leave the
-    # current layout; the .bin copy is just a backup.
+rm -rf "$OUT_DIR/cLAWd-backend-$TARGET_TRIPLE"  # cleanup any stale onedir
+SRC="$DIST_DIR/cLAWd-backend"
+DST="$OUT_DIR/cLAWd-backend-$TARGET_TRIPLE"
+if [[ ! -f "$SRC" ]]; then
+    echo "✗ expected onefile binary at $SRC, didn't find one" >&2
+    exit 1
 fi
+cp -p "$SRC" "$DST"
+chmod +x "$DST"
 
-echo "✓ sidecar at $OUT_DIR/cLAWd-backend-$TARGET_TRIPLE/"
+echo "✓ sidecar at $DST"
+echo "  size: $(du -h "$DST" | cut -f1)"
 echo "  Tauri's externalBin = \"binaries/cLAWd-backend\" picks this up."

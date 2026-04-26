@@ -47,17 +47,29 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS: this is a single-user local app (spec §7.6 — backend bound to
-# 127.0.0.1). The Next dev server proxies most requests through `/api/*`,
-# but multi-MB PDF uploads have to bypass the proxy because Next 15's dev
-# rewrite buffers request bodies at 10 MiB. Allow direct POSTs to the
-# loopback port from the dev origin.
+# CORS: single-user local app (spec §7.6 — backend bound to 127.0.0.1).
+# The security boundary is the loopback bind, not the CORS allow-list:
+# anything that can reach :8000 is already a local process. We accept all
+# origins so the same backend works for:
+#
+#   - `pnpm dev` from `http://localhost:3000` / `http://127.0.0.1:3000`
+#   - The bundled Tauri WebView, which serves the static frontend from
+#     `tauri://localhost` in production and `http://localhost:3000` in
+#     `pnpm tauri dev`. We previously had a hard-coded list and shipped
+#     a build where `tauri://localhost` got 0 CORS headers → the WebView
+#     fell back to "couldn't reach local backend" because the browser
+#     refused to surface the response.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    # `["*"]` (wildcard) is the simplest path that covers every origin a
+    # local-loopback backend can reasonably see: dev-server origins, the
+    # Tauri WebView's `tauri://localhost`, and any future `asset://` /
+    # `app://` schemes Tauri may add. We tried `allow_origin_regex=".*"`
+    # first; starlette's CORS middleware doesn't reflect non-http(s)
+    # schemes through that regex path, so `tauri://localhost` came back
+    # without an Access-Control-Allow-Origin header and the WebView
+    # blocked the response. The wildcard form returns the literal "*".
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -46,6 +46,22 @@ cd apps/web
 pnpm tauri build
 cd "$REPO_ROOT"
 
+# Ad-hoc sign both binaries inside the freshly-built .app. Without this,
+# macOS's security daemon refuses Keychain calls from the Tauri-spawned
+# sidecar (silent, indefinite hang). We sign the OUTER binaries only —
+# `--deep` would traverse into the PyInstaller-embedded archive and
+# corrupt the bootloader's PYZ lookup. The bundled entry script also
+# forces the encrypted-file credentials backend (LAWSCHOOL_FORCE_FILE_
+# BACKEND=1) so the keychain is never touched anyway, but signing the
+# binaries makes Gatekeeper less sus and fixes other minor friction.
+APP_PATH="$REPO_ROOT/apps/web/src-tauri/target/release/bundle/macos/cLAWd.app"
+if [[ -d "$APP_PATH" ]] && command -v codesign >/dev/null 2>&1; then
+    echo
+    echo "→ ad-hoc signing the bundle"
+    codesign --force --sign - "$APP_PATH/Contents/MacOS/cLAWd-backend" 2>&1 | tail -1
+    codesign --force --sign - "$APP_PATH/Contents/MacOS/cLAWd" 2>&1 | tail -1
+fi
+
 echo
 echo "✓ Build complete."
 APP_PATH="$REPO_ROOT/apps/web/src-tauri/target/release/bundle/macos/cLAWd.app"

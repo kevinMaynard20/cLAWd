@@ -1,6 +1,7 @@
 "use client";
 
 import { FileUp, KeyRound } from "lucide-react";
+import Link from "next/link";
 import * as React from "react";
 
 import { LoadingButton } from "@/components/LoadingButton";
@@ -9,10 +10,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 // Per-provider walkthrough URLs surfaced as a "How do I get this?" link
-// next to the API-key field. Anthropic only for now — when Voyage adds a
-// similar walkthrough, drop the URL here and it'll auto-render.
+// next to the API-key field. We route to IN-APP help pages rather than
+// raw external URLs because the bundled Tauri WebView silently swallows
+// anchor `target="_blank"` clicks (no system-browser handoff without the
+// shell plugin). The in-app help page embeds the same YouTube tutorial
+// inline and walks through the steps as text, so it works regardless of
+// whether the app is the Tauri shell or `pnpm dev` in a browser.
 const HOWTO_URLS: Record<"anthropic" | "voyage", string | null> = {
-  anthropic: "https://www.youtube.com/watch?v=vgncj7MJbVU",
+  anthropic: "/help/api-key",
   voyage: null,
 };
 
@@ -116,14 +121,12 @@ export function KeyInputPanel({
                 API key
               </label>
               {HOWTO_URLS[provider] && (
-                <a
+                <Link
                   href={HOWTO_URLS[provider] as string}
-                  target="_blank"
-                  rel="noreferrer noopener"
                   className="text-xs text-accent underline-offset-2 hover:underline"
                 >
                   How do I get this? →
-                </a>
+                </Link>
               )}
             </div>
             <Input

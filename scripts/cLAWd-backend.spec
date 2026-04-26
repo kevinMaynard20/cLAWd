@@ -16,7 +16,10 @@
 import os
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
-REPO_ROOT = os.path.abspath(os.path.dirname(SPECPATH) + "/..")  # noqa: F821 (PyInstaller injects SPECPATH)
+# SPECPATH is PyInstaller's name for the directory containing this spec —
+# i.e., `<repo>/scripts`. The repo root is one level up; we don't need a
+# second `dirname()` because SPECPATH is already a directory, not a file.
+REPO_ROOT = os.path.abspath(os.path.join(SPECPATH, ".."))  # noqa: F821 (PyInstaller injects SPECPATH)
 
 # ---------------------------------------------------------------------------
 # Hidden imports
@@ -112,31 +115,29 @@ a = Analysis(  # noqa: F821 (PyInstaller injects this name)
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)  # noqa: F821
 
+# --onefile mode: a single self-extracting executable that Tauri's
+# externalBin slot can ingest as one file. The first launch unpacks into
+# a temp dir (~300 ms overhead); subsequent launches reuse the cached
+# extraction. We tried --onedir initially but Tauri flattened the
+# resulting `_internal/` directory into Contents/MacOS/, breaking
+# PyInstaller's hardcoded Contents/Frameworks/Python lookup.
 exe = EXE(  # noqa: F821
     pyz,
     a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
     [],
-    exclude_binaries=True,
     name="cLAWd-backend",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
     console=True,  # keep stderr around so Tauri can capture sidecar logs
+    runtime_tmpdir=None,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,  # native-only — pin in build_python_bundle.sh if needed
     codesign_identity=None,
     entitlements_file=None,
-)
-
-coll = COLLECT(  # noqa: F821
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=False,
-    upx_exclude=[],
-    name="cLAWd-backend",
 )

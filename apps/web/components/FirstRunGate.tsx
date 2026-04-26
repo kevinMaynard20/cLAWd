@@ -14,16 +14,27 @@ import { api } from "@/lib/api";
  * code local and reviewable, and (c) Phase 1 only needs soft gating.
  */
 
+// Routes that bypass the gate entirely. The first-run page IS the gate's
+// destination, so it must render unconditionally. The /help/* tree is the
+// in-app docs surface (e.g. the "How do I get this?" link from the API
+// key field) — those pages have to work BEFORE the user has saved a key,
+// otherwise the link snaps back to /first-run mid-tutorial.
+const PUBLIC_ROUTES: readonly string[] = ["/first-run", "/help"];
+
+function isPublic(pathname: string): boolean {
+  return PUBLIC_ROUTES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
 export function FirstRunGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
-  const [ready, setReady] = React.useState(pathname.startsWith("/first-run"));
+  const [ready, setReady] = React.useState(isPublic(pathname));
 
   React.useEffect(() => {
     let cancelled = false;
 
-    // The first-run page itself must always render, regardless of gate state.
-    if (pathname.startsWith("/first-run")) {
+    // Public routes (first-run, help) render regardless of gate state.
+    if (isPublic(pathname)) {
       setReady(true);
       return;
     }

@@ -57,26 +57,65 @@ For backend-only changes, re-run `bash scripts/build_python_bundle.sh` then
 using `make dev` from the repo root for development; the bundled `.app` is
 strictly a delivery format.
 
+## Things to remember (lessons from the first end-to-end build)
+
+- **Ad-hoc sign without `--deep`.** `codesign --force --deep --sign -` will
+  walk INTO the PyInstaller binary's embedded archive and overwrite bytes
+  the bootloader needs — the next launch is silently broken (process
+  starts, stdio detached, no banner, no port bind). `build_app.sh` only
+  signs the two outer binaries (`cLAWd`, `cLAWd-backend`) which is enough
+  for Keychain / Gatekeeper purposes.
+
+- **Force the encrypted-file credentials backend in the bundle.**
+  `cLAWd_backend_entry.py` sets `LAWSCHOOL_FORCE_FILE_BACKEND=1` when
+  frozen. macOS's security daemon hangs indefinitely when an ad-hoc-
+  signed Tauri-spawned PyInstaller binary tries to call into Keychain —
+  even after the user types their password the request never returns.
+  The encrypted-file backend (HKDF-derived Fernet, spec §7.7.2) writes
+  to `~/Library/Application Support/cLAWd/credentials.enc` and bypasses
+  security-server entirely. Trade-off: no system-Keychain integration.
+
+- **CORS allow_origins=["*"].** `allow_origin_regex=".*"` doesn't reflect
+  non-http schemes correctly under starlette's middleware — the bundled
+  WebView's `tauri://localhost` origin came back without an
+  `Access-Control-Allow-Origin` header and the browser blocked the
+  response. The wildcard form is the simplest path that works for every
+  origin a 127.0.0.1-only backend can see (dev server, Tauri WebView,
+  any future `asset://` schemes).
+
+- **45 s wait for the sidecar to bind.** PyInstaller's onefile bootloader
+  unpacks ~150 MB of Python + C extensions to `/var/folders/.../T/_MEI*`
+  on first launch — measured 20–25 s on Intel, less on Apple Silicon.
+  Subsequent launches reuse the cached unpack and boot in ~2 s. The Rust
+  shell waits up to 45 s for `:8000` to answer before showing the
+  WebView; the window won't open with a dead backend.
+
+- **The `/help/*` tree is a public route.** `FirstRunGate` redirects to
+  `/first-run` whenever the LLM gate says no key — but the API-key
+  walkthrough page (`/help/api-key`) lives BEFORE the user has saved a
+  key. We exempt the `/help` prefix in `FirstRunGate` so the embedded
+  YouTube tutorial page actually loads.
+
 ## One gap left (distribution polish)
 
-**Code signing + notarization.** For ad-hoc local install (drag into
-`/Applications`, right-click → Open) Gatekeeper just nags once. For a real
-distribution flow, sign with an Apple Developer ID and run the Tauri
-notarize action. See Tauri's macOS distribution docs.
+**Apple-signed code + notarization.** Ad-hoc signing handles local-machine
+Gatekeeper. For a download-from-the-internet flow (the install.sh path),
+notarize with a Developer ID and run Tauri's `notarize` action. See
+Tauri's macOS distribution docs.
 
 Closed:
 
 - **Dynamic routes** — each `[param]/page.tsx` is now a tiny server
   component that exports `generateStaticParams` (a single `__shell__`
-  placeholder) and renders the client UI from `ClientPage.tsx`. The
-  static-export build is verified clean — every dynamic route lists
-  under "prerendered as static HTML (uses generateStaticParams)" with the
-  expected `__shell__` shells in `out/`.
+  placeholder) and renders the client UI from `ClientPage.tsx`.
 - **Icons** — `scripts/generate_icons.py` renders the full Apple icon
-  matrix from a 1024×1024 master via PIL + `iconutil` (real ICNS, not a
-  PNG-renamed-icns). Design: deep-navy background, large cream serif §
-  flanked by gold `{}` brackets, "cLAWd" wordmark in the bottom safe
-  area. Re-run any time to tweak the design; the script is idempotent.
+  matrix from a 1024×1024 master via PIL + `iconutil`. Design: deep-navy
+  background, large cream serif § flanked by gold `{}` brackets,
+  "cLAWd" wordmark.
+- **Backend reachability** — see "Things to remember" above. End-to-end
+  test confirmed: bundled `.app` boots, WebView talks to `:8000`,
+  `/credentials/anthropic` POST stores the key, `/credentials/gate`
+  reports `llm_enabled: true`, dashboard loads.
 
 ## How the shell handles cleanup
 

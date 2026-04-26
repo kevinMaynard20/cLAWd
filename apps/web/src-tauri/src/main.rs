@@ -122,11 +122,18 @@ fn main() {
                 .expect("backend mutex poisoned on startup")
                 .replace(child);
 
-            // Block the main window's first paint until the API is up. 8 s
-            // is generous — uvicorn typically binds in ~300 ms; SQLite WAL
-            // recovery on a large DB can stretch it but rarely past 2 s.
-            if !wait_for_backend(Duration::from_secs(8)) {
-                eprintln!("[cLAWd] backend did not answer on :8000 within 8 s; window will open anyway");
+            // Block the main window's first paint until the API is up.
+            // First-launch budget is generous because PyInstaller's onefile
+            // bootloader unpacks Python + every C-extension into /var/folders
+            // on first run (subsequent launches reuse the cached unpack and
+            // boot in ~2 s). We've measured 20–25 s on Intel Macs, so 45 s
+            // gives headroom for slow disks and Apple Silicon Rosetta
+            // translation.
+            if !wait_for_backend(Duration::from_secs(45)) {
+                eprintln!(
+                    "[cLAWd] backend did not answer on :8000 within 45 s; \
+                     window will open anyway and surface its own error"
+                );
             }
             Ok(())
         })
