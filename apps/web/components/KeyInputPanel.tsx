@@ -8,6 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
+// Per-provider walkthrough URLs surfaced as a "How do I get this?" link
+// next to the API-key field. Anthropic only for now — when Voyage adds a
+// similar walkthrough, drop the URL here and it'll auto-render.
+const HOWTO_URLS: Record<"anthropic" | "voyage", string | null> = {
+  anthropic: "https://www.youtube.com/watch?v=vgncj7MJbVU",
+  voyage: null,
+};
+
 /**
  * Shared paste/upload control used by the first-run wall and the Rotate
  * modal on the Settings → API Key page. Keeps validation-state UI out of
@@ -100,12 +108,24 @@ export function KeyInputPanel({
 
         <TabsContent value="paste" className="flex flex-col gap-3 pt-4">
           <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor={`${idPrefix}-paste`}
-              className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground"
-            >
-              API key
-            </label>
+            <div className="flex items-baseline justify-between gap-2">
+              <label
+                htmlFor={`${idPrefix}-paste`}
+                className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground"
+              >
+                API key
+              </label>
+              {HOWTO_URLS[provider] && (
+                <a
+                  href={HOWTO_URLS[provider] as string}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-xs text-accent underline-offset-2 hover:underline"
+                >
+                  How do I get this? →
+                </a>
+              )}
+            </div>
             <Input
               id={`${idPrefix}-paste`}
               type="password"

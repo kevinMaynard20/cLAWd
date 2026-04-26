@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import * as React from "react";
 import { useEffect, useState } from "react";
 
 import { Spinner } from "@/components/Spinner";
@@ -68,6 +69,8 @@ export default function Home() {
         features) is live. Dedicated reading and grading UI surfaces ship
         later — for now, see <code>/docs</code> for the full API.
       </p>
+
+      <GetStartedSection corpora={corpora} loading={loading} />
 
       <CorporaSection corpora={corpora} error={error} loading={loading} />
 
@@ -143,6 +146,139 @@ export default function Home() {
         </div>
       </section>
     </main>
+  );
+}
+
+/**
+ * Onboarding panel. Always visible, but auto-expands when the user has no
+ * books yet (first-run experience). Spec'd order: textbook before anything
+ * else, since briefs / drills / attack sheets / outlines all depend on the
+ * casebook's case-opinion blocks.
+ */
+function GetStartedSection({
+  corpora,
+  loading,
+}: {
+  corpora: CorpusSummary[] | null;
+  loading: boolean;
+}) {
+  const [open, setOpen] = React.useState<boolean | null>(null);
+  const hasBooks =
+    corpora !== null && corpora.some((c) => (c.book_count ?? 0) > 0);
+  // First-paint default: expanded if we already know there are no books;
+  // collapsed once books exist. The user can still toggle.
+  const effectiveOpen =
+    open !== null ? open : !loading && corpora !== null && !hasBooks;
+
+  return (
+    <section className="mt-8 border border-border bg-card">
+      <button
+        type="button"
+        onClick={() => setOpen(!effectiveOpen)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-muted"
+        aria-expanded={effectiveOpen}
+      >
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+            Getting started
+          </p>
+          <p className="mt-0.5 font-serif text-lg font-semibold">
+            {hasBooks
+              ? "Quick reference — the order things go in"
+              : "Start here — upload a casebook first"}
+          </p>
+        </div>
+        <span className="text-xs uppercase tracking-[0.12em] text-accent">
+          {effectiveOpen ? "Hide" : "Show"}
+        </span>
+      </button>
+
+      {effectiveOpen && (
+        <ol className="space-y-4 border-t border-border px-4 py-4 font-serif text-sm leading-relaxed">
+          <Step
+            n={1}
+            title="Upload your casebook"
+            href="/upload"
+            cta="Upload a PDF →"
+          >
+            Always do this first. Briefs, drills, attack sheets, and outlines
+            all read from your casebook&apos;s case-opinion blocks. The
+            ingestion pipeline extracts each printed page, classifies blocks
+            (case opinions, numbered notes, headers), and indexes them by
+            source-page number.
+          </Step>
+
+          <Step n={2} title="Open the casebook in the corpus dashboard">
+            Click your corpus card below to enter its dashboard. Open the
+            book on the <strong>Books</strong> tab. You&apos;ll see every
+            case the segmenter detected, with one-click <strong>Brief</strong>{" "}
+            / <strong>Drill</strong> / <strong>Cold-call</strong> buttons per
+            case. The page-range slider at the top filters to whatever you
+            were assigned this week.
+          </Step>
+
+          <Step n={3} title="Brief the cases you need">
+            Click <strong>Brief</strong> next to a case to generate a FIRAC+
+            brief. Briefs accumulate in the corpus&apos;s <strong>Briefs</strong>{" "}
+            tab and feed every downstream feature. The model uses the
+            casebook text by default; for cases with thin or missing text it
+            falls back to general legal knowledge (badged as such).
+          </Step>
+
+          <Step n={4} title="Now the synthesis tools light up">
+            Once you have <strong>2+ briefs</strong>, build a multi-case{" "}
+            <strong>synthesis</strong>, a per-topic <strong>attack sheet</strong>,
+            or a hierarchical <strong>outline</strong> across the whole
+            corpus. The shortcuts under <em>Study features</em> below open
+            those builders — each one has a brief picker that lists what
+            you&apos;ve already produced.
+          </Step>
+
+          <Step n={5} title="Optional: transcripts and past exams">
+            <strong>Transcripts</strong> (paste or upload Gemini class
+            recordings on the Upload page) become emphasis maps —
+            ranked &quot;what the professor actually emphasized&quot; signals
+            that bias attack-sheet generation. <strong>Past exams</strong>{" "}
+            (with grader memos when available) feed the IRAC practice wizard
+            for graded feedback against the actual rubric.
+          </Step>
+        </ol>
+      )}
+    </section>
+  );
+}
+
+function Step({
+  n,
+  title,
+  children,
+  href,
+  cta,
+}: {
+  n: number;
+  title: string;
+  children: React.ReactNode;
+  href?: string;
+  cta?: string;
+}) {
+  return (
+    <li className="grid grid-cols-[2rem_1fr] gap-3">
+      <span className="font-serif text-xl font-semibold tabular-nums text-accent">
+        {n}.
+      </span>
+      <div>
+        <p className="font-semibold">{title}</p>
+        <p className="mt-1 text-foreground/85">{children}</p>
+        {href && cta && (
+          <Link
+            href={href}
+            className="law-link mt-2 inline-block text-xs uppercase tracking-[0.12em] text-accent hover:underline"
+          >
+            {cta}
+          </Link>
+        )}
+      </div>
+    </li>
   );
 }
 

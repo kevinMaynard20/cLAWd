@@ -1,4 +1,4 @@
- # Law School Study System — Design Specification
+ok  # Law School Study System — Design Specification
 
 **Version:** 1.0
 **Target builder:** Claude Code (agentic development)
