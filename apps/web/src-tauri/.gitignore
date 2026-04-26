@@ -1,0 +1,11 @@
+# Rust build artefacts.
+target/
+
+# PyInstaller-built sidecar — too large + platform-specific to track.
+# scripts/build_python_bundle.sh regenerates these locally.
+binaries/cLAWd-backend
+binaries/cLAWd-backend-*
+binaries/_internal/
+
+# Tauri's generated capability files when the user runs `tauri dev`.
+gen/

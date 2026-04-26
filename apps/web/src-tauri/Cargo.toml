@@ -1,0 +1,29 @@
+[package]
+name = "cLAWd"
+version = "0.1.0"
+description = "cLAWd — local-first 1L study system"
+authors = ["Kevin Maynard"]
+license = "Proprietary"
+repository = "https://github.com/kevinMaynard20/cLAWd"
+edition = "2021"
+
+# Pinned to Tauri v2 — the v2 API is the one we need for sidecar lifecycle
+# (window event hooks that synchronously kill the spawned backend before
+# the WebView shuts down).
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["macos-private-api"] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Compiler tuning. The shell is tiny; aggressive lto pays off with a
+# smaller .app and a snappier first launch.
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

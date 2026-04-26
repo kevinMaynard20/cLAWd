@@ -34,6 +34,8 @@ make restart   # stop + dev
 
 Open http://localhost:3000. The first-run wall asks for your Anthropic API key (stored in your OS keychain). API docs live at http://127.0.0.1:8000/docs.
 
+For a packaged Mac app (single double-clickable `.app`, no Terminal, backend dies on close), see `DESKTOP_BUILD.md`. The Tauri build pipeline lives on the `tauri-shell` branch; one command (`bash scripts/build_app.sh`) produces `cLAWd.app` + a DMG.
+
 **First-time setup** (once):
 
 ```
