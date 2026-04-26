@@ -92,25 +92,33 @@ fi
 
 # Pull the right asset URL out of the JSON without jq (curl|bash users
 # rarely have it installed). Python's json module is on every Mac.
+#
+# Implementation note: we use `python3 -c '...'` with the JSON piped on
+# stdin and the architecture label as argv[1]. The earlier shape —
+# `python3 - <<PY ... PY <<<"$RELEASE_JSON"` — silently fed the JSON to
+# python3 AS THE SCRIPT (since bash's last stdin redirection wins, the
+# heredoc-style script body got discarded). The `-c` form is unambiguous.
 ASSET_URL="$(
-    python3 - <<PY
+    printf '%s' "$RELEASE_JSON" | python3 -c '
 import json, sys
 data = json.loads(sys.stdin.read() or "{}")
-label = "${LABEL}"
+label = sys.argv[1]
 for asset in data.get("assets", []):
     name = asset.get("name", "")
     if name.endswith(f"-{label}.dmg"):
         print(asset.get("browser_download_url", ""))
         break
-PY
-<<<"$RELEASE_JSON"
+' "$LABEL"
 )"
 
 if [[ -z "$ASSET_URL" ]]; then
     die "Latest release has no DMG for $LABEL. Try the .app.tar.gz under Releases manually."
 fi
 
-TAG="$(python3 -c 'import json,sys;print(json.loads(sys.stdin.read())["tag_name"])' <<<"$RELEASE_JSON")"
+TAG="$(
+    printf '%s' "$RELEASE_JSON" | python3 -c \
+        'import json,sys;print(json.loads(sys.stdin.read())["tag_name"])'
+)"
 say "Latest release: ${BOLD}$TAG${RESET}"
 
 # ---------- download ----------
