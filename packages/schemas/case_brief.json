@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lawschool.local/schemas/case_brief.json",
+  "title": "CaseBrief",
+  "description": "FIRAC+ case-brief output (spec §5.2). Every claim cites a source Block id.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "case_name",
+    "facts",
+    "procedural_posture",
+    "issue",
+    "holding",
+    "rule",
+    "reasoning",
+    "significance",
+    "where_this_fits",
+    "limitations",
+    "sources"
+  ],
+  "properties": {
+    "case_name": {
+      "type": "string",
+      "description": "e.g., 'Shelley v. Kraemer'. Must match the case_opinion_block.block_metadata.case_name exactly when present."
+    },
+    "citation": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical reporter citation, e.g., '334 U.S. 1'. Null if unavailable."
+    },
+    "court": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "year": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "facts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Claim"
+      },
+      "description": "Ordered list of key facts, each tied to a source block."
+    },
+    "procedural_posture": {
+      "$ref": "#/$defs/Claim",
+      "description": "Who sued whom + what court is reviewing. Empty string + limitation entry if silent."
+    },
+    "issue": {
+      "$ref": "#/$defs/Claim",
+      "description": "Phrased as a question. Do NOT use 'clearly' — Pollack pet peeve (Appendix A)."
+    },
+    "holding": {
+      "$ref": "#/$defs/Claim",
+      "description": "One sentence when possible."
+    },
+    "rule": {
+      "$ref": "#/$defs/Claim",
+      "description": "Prefer verbatim quote; mark paraphrase with '(paraphrase)'."
+    },
+    "reasoning": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Claim"
+      },
+      "description": "Ordered reasoning steps from rule to holding."
+    },
+    "significance": {
+      "$ref": "#/$defs/Claim",
+      "description": "2–3 sentences on doctrinal significance."
+    },
+    "where_this_fits": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Doctrinal arc context from TOC + notes. Null/empty when unavailable."
+    },
+    "likely_emphasis": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Only populated when a professor_profile was provided. Ties profile pet peeves/framings to this case."
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Claims the student might be tempted to make that the source does not support. Honesty marker."
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "description": "Deduplicated set of Block ids cited in any field above. Empty when the brief was generated from the model's general knowledge (no casebook text available)."
+    },
+    "from_general_knowledge": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when the casebook text was unavailable (empty / mis-extracted opinion block) and the brief was generated from the LLM's general knowledge of US case law. UI surfaces a clear badge when this is true."
+    }
+  },
+  "$defs": {
+    "Claim": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "text",
+        "source_block_ids"
+      ],
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "source_block_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Block ids citing the casebook. May be empty when the brief is generated from the model's general knowledge (casebook text unavailable) — in that case `from_general_knowledge` is true at the top level and the UI flags the brief accordingly."
+        },
+        "paraphrase": {
+          "type": "boolean",
+          "default": false,
+          "description": "True when the text is a paraphrase of source material rather than verbatim."
+        }
+      }
+    }
+  }
+}

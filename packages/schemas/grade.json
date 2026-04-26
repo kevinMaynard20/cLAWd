@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lawschool.local/schemas/grade.json",
+  "title": "Grade",
+  "description": "IRAC grading output (spec §5.5). Auditable — every deduction traces to a rubric item id or pattern name.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "overall_score",
+    "letter_grade",
+    "per_rubric_scores",
+    "pattern_flags",
+    "strengths",
+    "gaps",
+    "what_would_have_earned_more_points",
+    "sample_paragraph",
+    "rubric_id",
+    "sources"
+  ],
+  "properties": {
+    "overall_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Calibrated 0–100. Driven by per_rubric_scores (weighted sum) minus pattern-flag penalties."
+    },
+    "letter_grade": {
+      "type": "string",
+      "enum": [
+        "A+",
+        "A",
+        "A-",
+        "B+",
+        "B",
+        "B-",
+        "C+",
+        "C",
+        "C-",
+        "D",
+        "F"
+      ],
+      "description": "Rough mapping to A/B/C — informational only (§5.5)."
+    },
+    "per_rubric_scores": {
+      "type": "array",
+      "description": "One entry per required_issue / required_rule / expected_counterargument. Must cover every rubric item — verify(rubric_coverage) enforces this.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "rubric_item_id",
+          "rubric_item_kind",
+          "points_earned",
+          "points_possible",
+          "justification"
+        ],
+        "properties": {
+          "rubric_item_id": {
+            "type": "string"
+          },
+          "rubric_item_kind": {
+            "type": "string",
+            "enum": [
+              "required_issue",
+              "required_rule",
+              "expected_counterargument"
+            ]
+          },
+          "points_earned": {
+            "type": "number",
+            "minimum": 0
+          },
+          "points_possible": {
+            "type": "number",
+            "minimum": 0
+          },
+          "justification": {
+            "type": "string",
+            "description": "Why this score, referencing specific sentences in the answer."
+          }
+        }
+      }
+    },
+    "pattern_flags": {
+      "type": "array",
+      "description": "Anti-pattern hits (hedging, 'clearly', unmatched future interests, etc.). Pulled from rubric.anti_patterns + professor profile.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "pattern_name",
+          "severity",
+          "excerpt",
+          "message"
+        ],
+        "properties": {
+          "pattern_name": {
+            "type": "string",
+            "description": "matches rubric.anti_patterns[*].name"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "excerpt": {
+            "type": "string",
+            "description": "verbatim snippet from the answer that triggered the flag"
+          },
+          "message": {
+            "type": "string",
+            "description": "what the student should do differently"
+          }
+        }
+      }
+    },
+    "strengths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Short list of what the answer did well. Empty is fine but honest."
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Issues not spotted, rules not stated, applications missing."
+    },
+    "what_would_have_earned_more_points": {
+      "type": "string",
+      "description": "1–3 sentences. The single highest-leverage fix."
+    },
+    "sample_paragraph": {
+      "type": "string",
+      "description": "One rewritten paragraph showing an A-level version of a B-level chunk from the answer."
+    },
+    "rubric_id": {
+      "type": "string",
+      "description": "ID of the Rubric artifact this grade used."
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Artifact IDs consulted (rubric, professor_profile, past_exam, etc.)."
+    }
+  }
+}

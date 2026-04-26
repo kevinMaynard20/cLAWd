@@ -1,0 +1,21 @@
+# Default seed for a brand-new professor profile.
+# Phase 3 will populate Pollack-specific contents from Appendix A of spec.md
+# via `generate(template="professor_profile_extraction", ...)` on uploaded memos.
+# This file is the empty shell the extraction prompt starts from.
+
+professor_name = ""
+course         = ""
+school         = ""
+
+[exam_format]
+duration_hours = 0
+word_limit     = 0
+open_book      = false
+# structure = [{ part = "I", weight = 10, type = "multiple_choice", count = 10 }, ...]
+
+pet_peeves        = []
+favored_framings  = []
+stable_traps      = []
+voice_conventions = []
+commonly_tested   = []
+source_artifacts  = []

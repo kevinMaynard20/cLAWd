@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lawschool.local/schemas/mc_questions.json",
+  "title": "MCQuestionSet",
+  "description": "Spec §5.12. 10 multiple-choice questions with full explanations. Pollack Part I is 10 MCs — this mirrors that format.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "topic",
+    "questions",
+    "sources"
+  ],
+  "properties": {
+    "topic": {
+      "type": "string"
+    },
+    "questions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "stem",
+          "options",
+          "correct_answer",
+          "explanation",
+          "distractor_explanations",
+          "doctrine_tested"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "stem": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": [
+                "letter",
+                "text"
+              ],
+              "properties": {
+                "letter": {
+                  "type": "string",
+                  "enum": [
+                    "A",
+                    "B",
+                    "C",
+                    "D"
+                  ]
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "correct_answer": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D"
+            ]
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "distractor_explanations": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Map from letter → why that distractor is wrong. Keys for the three wrong answers."
+          },
+          "doctrine_tested": {
+            "type": "string"
+          },
+          "source_block_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

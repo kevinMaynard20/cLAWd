@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lawschool.local/schemas/socratic_turn.json",
+  "title": "SocraticTurn",
+  "description": "Output of a single professor-turn in a Socratic drill or cold-call session (spec §5.4, §5.6). The full session is a list of turns plus user answers.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["question"],
+  "properties": {
+    "question": { "type": "string", "description": "The professor's next question, cold-call style." },
+    "intent": {
+      "type": "string",
+      "enum": [
+        "open_facts",
+        "probe_holding",
+        "probe_rule",
+        "probe_reasoning",
+        "alter_facts",
+        "push_back_on_hedge",
+        "require_alternative_argument",
+        "cold_debrief",
+        "close"
+      ],
+      "description": "Why this question now — drives downstream grading."
+    },
+    "mode": { "type": "string", "enum": ["question", "pushback", "debrief"] },
+    "react_to_previous": {
+      "type": ["string", "null"],
+      "description": "1–2 sentence reaction to the student's last answer, if any. Null on the opening turn."
+    },
+    "escalation_level": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "1 = warm-up, 5 = hardest. Used for cold-call time pressure."
+    }
+  }
+}

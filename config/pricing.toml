@@ -1,0 +1,23 @@
+# Per spec §7.7.4. Dollars per million tokens (mtok).
+# Loaded at startup; missing/malformed => conservative (high) defaults + warning.
+
+[anthropic.claude-opus-4-7]
+input_per_mtok  = 15.00
+output_per_mtok = 75.00
+
+[anthropic.claude-sonnet-4-6]
+input_per_mtok  = 3.00
+output_per_mtok = 15.00
+
+[anthropic.claude-haiku-4-5]
+input_per_mtok  = 1.00
+output_per_mtok = 5.00
+
+[voyage.voyage-3]
+input_per_mtok  = 0.06
+output_per_mtok = 0.00   # embeddings are input-only
+
+# Conservative fallback applied when a model is not listed above.
+[conservative_default]
+input_per_mtok  = 20.00
+output_per_mtok = 100.00

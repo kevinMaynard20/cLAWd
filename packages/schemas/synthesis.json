@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lawschool.local/schemas/synthesis.json",
+  "title": "DoctrinalSynthesis",
+  "description": "Multi-case synthesis (spec §5.8). Explains how N cases fit together doctrinally.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "doctrinal_area",
+    "cases",
+    "timeline",
+    "categorical_rules",
+    "balancing_tests",
+    "relationships",
+    "modern_synthesis",
+    "exam_framework",
+    "sources"
+  ],
+  "properties": {
+    "doctrinal_area": {
+      "type": "string"
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "case_name"
+        ],
+        "properties": {
+          "case_name": {
+            "type": "string"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "court": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "timeline": {
+      "type": "array",
+      "description": "Chronological doctrinal evolution. Each entry a key moment.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "year",
+          "event"
+        ],
+        "properties": {
+          "year": {
+            "type": "integer"
+          },
+          "event": {
+            "type": "string"
+          },
+          "case_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "categorical_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "rule",
+          "from_case"
+        ],
+        "properties": {
+          "rule": {
+            "type": "string"
+          },
+          "from_case": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "balancing_tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "test",
+          "factors",
+          "from_case"
+        ],
+        "properties": {
+          "test": {
+            "type": "string"
+          },
+          "factors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "from_case": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "description"
+        ],
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "e.g., 'Loretto created a per-se rule carve-out from Penn Central's balancing.'"
+          },
+          "case_a": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "case_b": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "modern_synthesis": {
+      "type": "string",
+      "description": "2–3 sentence doctrinal map today."
+    },
+    "exam_framework": {
+      "type": "string",
+      "description": "How to attack a question on this topic."
+    },
+    "visual_diagram": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional Mermaid source for a flowchart."
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+# Weights for EmphasisItem.exam_signal_score (spec §3.10, §5.7).
+# Composite of multiple signals — NOT just "minutes spent."
+
+[weights]
+minutes_on          = 0.20
+return_count        = 0.25
+hypotheticals_run   = 0.25
+engaged_questions   = 0.15
+not_disclaimed      = 0.15
+
+# Hard override when professor explicitly disclaims testability.
+[penalties]
+disclaimed = -0.50
+
+# Saturation caps for normalizing raw features to [0, 1].
+[normalization]
+minutes_on_cap         = 20.0   # minutes on a single subject — above this saturates
+return_count_cap       = 8
+hypotheticals_run_cap  = 5
+engaged_questions_cap  = 6

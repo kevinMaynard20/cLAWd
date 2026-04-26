@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design direction (spec §1, §7.7.1, §7.7.5): serious, law-review-dense, not
+ * startup-shiny. Muted palette; paper-white background; a single restrained
+ * ink-blue accent. Sans for UI chrome (Inter), serif for case text (Source
+ * Serif). Borders are hairline (1px). No gradients, no glassmorphism.
+ */
+
+@layer base {
+  :root {
+    /* Near-white paper, warm neutral ink, ring = narrow wine-red reserved
+     * for focus + destructive affordances. Accent is a muted ink blue used
+     * only for primary buttons and links. */
+    --background: 40 20% 99%;
+    --foreground: 220 18% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 18% 14%;
+    --muted: 40 12% 95%;
+    --muted-foreground: 220 10% 42%;
+    --subtle: 40 15% 97%;
+    --border: 220 14% 88%;
+    --border-strong: 220 14% 76%;
+    --input: 220 14% 88%;
+    --accent: 218 40% 28%;
+    --accent-foreground: 40 20% 99%;
+    --primary: 218 40% 28%;
+    --primary-foreground: 40 20% 99%;
+    --destructive: 358 55% 42%;
+    --destructive-foreground: 40 20% 99%;
+    --warning: 38 72% 42%;
+    --warning-foreground: 40 20% 99%;
+    --success: 152 36% 32%;
+    --success-foreground: 40 20% 99%;
+    --ring: 218 40% 28%;
+    --radius: 2px;
+  }
+
+  .dark {
+    --background: 220 18% 10%;
+    --foreground: 40 16% 92%;
+    --card: 220 18% 12%;
+    --card-foreground: 40 16% 92%;
+    --muted: 220 14% 16%;
+    --muted-foreground: 220 10% 66%;
+    --subtle: 220 14% 14%;
+    --border: 220 14% 22%;
+    --border-strong: 220 14% 32%;
+    --input: 220 14% 22%;
+    --accent: 218 44% 68%;
+    --accent-foreground: 220 18% 10%;
+    --primary: 218 44% 68%;
+    --primary-foreground: 220 18% 10%;
+    --destructive: 358 55% 62%;
+    --destructive-foreground: 220 18% 10%;
+    --warning: 38 72% 60%;
+    --warning-foreground: 220 18% 10%;
+    --success: 152 36% 56%;
+    --success-foreground: 220 18% 10%;
+    --ring: 218 44% 68%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    font-feature-settings: "ss01", "cv11", "cv02";
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family:
+      var(--font-sans),
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      sans-serif;
+    font-feature-settings: "ss01", "cv11", "cv02";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.01em;
+  }
+
+  /* A thin underline-on-hover for inline links; keeps the law-review feel. */
+  a.law-link {
+    color: hsl(var(--accent));
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+  a.law-link:hover {
+    text-decoration: underline;
+  }
+}
+
+@layer components {
+  .rule-above {
+    border-top: 1px solid hsl(var(--border));
+  }
+  .rule-below {
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  .ink-divider {
+    border-top: 1px solid hsl(var(--border-strong));
+  }
+}

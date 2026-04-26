@@ -1,0 +1,65 @@
+# Spec §7.6 says storage/ is local-only and gitignored.
+storage/
+!storage/**/.gitkeep
+
+# Local test material — copyrighted casebook PDFs + the user's exam memos
+# live here. Per CLAUDE.md the docs/ folder is the user's local test bench
+# and never goes in version control.
+docs/
+apps/api/tests/docs/
+
+# Secrets — key material must never land in git (§7.7.2).
+.env
+.env.*
+!.env.example
+*.enc
+credentials.enc
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+dist/
+build/
+.ipynb_checkpoints/
+
+# Node / Next
+node_modules/
+.next/
+.turbo/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# LLM replay cache lives in tests/ and IS committed (§6.3).
+# Logs are not.
+*.log
+logs/
+
+# Local sqlite DB
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3

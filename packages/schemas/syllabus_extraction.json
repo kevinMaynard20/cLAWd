@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lawschool.local/schemas/syllabus_extraction.json",
+  "title": "SyllabusExtraction",
+  "description": "Output of syllabus_extraction (spec §4.1.4). Parses a syllabus document (pasted text from a PDF/DOCX/Google Doc) into structured assignment entries.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "title",
+    "entries"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "e.g., 'Property — Pollack — Spring 2026 Syllabus'"
+    },
+    "entries": {
+      "type": "array",
+      "description": "One entry per assignment / class day.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "code",
+          "title",
+          "page_ranges",
+          "cases_assigned",
+          "topic_tags"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Short assignment code, e.g., 'PROP-C5' or 'Class 14'."
+          },
+          "assignment_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 8601 date or null. Parse 'Tuesday, Jan 14' → infer semester year if context allows."
+          },
+          "title": {
+            "type": "string",
+            "description": "e.g., 'Easements I'."
+          },
+          "page_ranges": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "description": "List of [start, end] pairs (inclusive source-page numbers). 'pp. 498–521' → [[498, 521]]."
+          },
+          "cases_assigned": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Canonical case names pulled from the syllabus text."
+          },
+          "topic_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Short topic slugs — e.g., 'easements', 'creation', 'express'."
+          }
+        }
+      }
+    }
+  }
+}

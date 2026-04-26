@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lawschool.local/schemas/professor_profile.json",
+  "title": "ProfessorProfile",
+  "description": "Extracted professor voice + grading profile (spec §3.7, Appendix A). Output of `professor_profile_extraction`.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "professor_name",
+    "course",
+    "school",
+    "exam_format",
+    "pet_peeves",
+    "favored_framings",
+    "stable_traps",
+    "voice_conventions",
+    "commonly_tested",
+    "source_artifact_paths"
+  ],
+  "properties": {
+    "professor_name": {
+      "type": "string"
+    },
+    "course": {
+      "type": "string"
+    },
+    "school": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "exam_format": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "duration_hours",
+        "word_limit",
+        "open_book",
+        "structure"
+      ],
+      "properties": {
+        "duration_hours": {
+          "type": "number",
+          "minimum": 0
+        },
+        "word_limit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "open_book": {
+          "type": "boolean"
+        },
+        "structure": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "part",
+              "weight",
+              "type"
+            ],
+            "properties": {
+              "part": {
+                "type": "string"
+              },
+              "weight": {
+                "type": "number"
+              },
+              "type": {
+                "type": "string"
+              },
+              "count": {
+                "type": "integer"
+              },
+              "density": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "prompt_conventions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "pet_peeves": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "name",
+          "pattern",
+          "severity",
+          "source"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "slug-cased short id — pipelines match on this"
+          },
+          "pattern": {
+            "type": "string",
+            "description": "what text pattern triggers this peeve"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "quote": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "memo quote that justifies calling this out"
+          },
+          "source": {
+            "type": "string",
+            "description": "memo p.N or equivalent citation"
+          },
+          "must_know_pairings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "favored_framings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "stable_traps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "name",
+          "desc"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "desc": {
+            "type": "string"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "voice_conventions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "name",
+          "desc"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "desc": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "commonly_tested": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source_artifact_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Which uploaded memos / syllabi this profile was built from."
+    }
+  }
+}

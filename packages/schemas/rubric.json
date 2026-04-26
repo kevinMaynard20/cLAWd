@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lawschool.local/schemas/rubric.json",
+  "title": "Rubric",
+  "description": "Ground-truth grading rubric (spec §2.6, §5.5). Output of `rubric_from_memo` and `hypo_generation` (Path B). Grading is rubric-driven, deterministic given a rubric, auditable.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "question_label",
+    "required_issues",
+    "required_rules",
+    "expected_counterarguments",
+    "anti_patterns",
+    "sources"
+  ],
+  "properties": {
+    "question_label": {
+      "type": "string",
+      "description": "e.g., 'Part II Q2' or 'Easements hypo'"
+    },
+    "fact_summary": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Short recap of the fact pattern — optional but useful for the grader."
+    },
+    "required_issues": {
+      "type": "array",
+      "description": "Issues the student MUST spot to earn full credit. Each item is weighted.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "label",
+          "weight",
+          "why_required"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "slug id, stable across rubric versions"
+          },
+          "label": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number",
+            "description": "relative weight; sums to 1.0 across required_issues"
+          },
+          "why_required": {
+            "type": "string"
+          },
+          "source_memo_excerpt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "verbatim memo text justifying this issue"
+          }
+        }
+      }
+    },
+    "required_rules": {
+      "type": "array",
+      "description": "Rules the answer MUST state correctly — not the same as issues (issues are \"this came up\"; rules are \"here's the doctrine\").",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "statement",
+          "tied_to_issues"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "statement": {
+            "type": "string"
+          },
+          "tied_to_issues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "issue ids this rule relates to"
+          },
+          "must_apply_to_facts": {
+            "type": "boolean",
+            "default": true,
+            "description": "Pollack-style requirement that the rule be APPLIED, not just recited."
+          }
+        }
+      }
+    },
+    "expected_counterarguments": {
+      "type": "array",
+      "description": "Arguments in the alternative the student is expected to acknowledge (§5.5 Pollack's 'argue in the alternative').",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "summary"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "why_expected": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "anti_patterns": {
+      "type": "array",
+      "description": "Question-specific pet peeves the grader must penalize (copied from the professor profile's pet_peeves plus any memo-specific additions).",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "name",
+          "pattern",
+          "severity"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "pattern": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "prompt_role": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The voice the answer must adopt — 'law clerk memo' vs 'client's lawyer' vs 'brief'. Wrong voice = lost points (§Appendix A)."
+    },
+    "word_limit": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Artifact IDs (PastExam, GraderMemo) this rubric was derived from."
+    }
+  }
+}

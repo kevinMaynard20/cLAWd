@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lawschool.local/schemas/flashcards.json",
+  "title": "FlashcardSet",
+  "description": "Spec §5.3 flashcard set. 20–25 cards covering rule-questions, case-to-doctrine pairings, compare/contrast, 'what is the test for X' (Appendix B).",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "topic",
+    "cards",
+    "sources"
+  ],
+  "properties": {
+    "topic": {
+      "type": "string"
+    },
+    "cards": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "kind",
+          "front",
+          "back",
+          "source_block_ids"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "slug id, stable across regenerations"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "rule",
+              "case_to_doctrine",
+              "compare_contrast",
+              "test_for",
+              "element",
+              "counter_example"
+            ]
+          },
+          "front": {
+            "type": "string"
+          },
+          "back": {
+            "type": "string"
+          },
+          "source_block_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

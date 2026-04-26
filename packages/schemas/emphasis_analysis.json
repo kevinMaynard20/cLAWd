@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lawschool.local/schemas/emphasis_analysis.json",
+  "title": "EmphasisAnalysis",
+  "description": "Output of emphasis_analysis (spec §5.7). Per-subject justifications + composite exam_signal_score derived from pre-computed features.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "items"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "subject_kind",
+          "subject_label",
+          "exam_signal_score",
+          "justification"
+        ],
+        "properties": {
+          "subject_kind": {
+            "type": "string",
+            "enum": [
+              "case",
+              "rule",
+              "concept"
+            ]
+          },
+          "subject_label": {
+            "type": "string",
+            "description": "Canonical name — case name, rule name, or concept phrase."
+          },
+          "minutes_on": {
+            "type": "number",
+            "minimum": 0
+          },
+          "return_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hypotheticals_run": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Short summaries of hypos the professor ran on this subject."
+          },
+          "disclaimed": {
+            "type": "boolean",
+            "default": false
+          },
+          "engaged_questions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "exam_signal_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Composite 0..1 (spec §3.10). Honors config/emphasis_weights.toml."
+          },
+          "justification": {
+            "type": "string",
+            "description": "Human-readable 'why we think this is important' string. Must reference at least one concrete signal (e.g., 'returned 4 times; ran hypos on investment-backed expectations')."
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional 2–3 sentence top-level takeaway — e.g., 'Professor emphasized Penn Central balancing and the Loretto carve-out; Tahoe-Sierra explicitly disclaimed.'"
+    }
+  }
+}

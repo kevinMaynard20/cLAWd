@@ -1,0 +1,38 @@
+# Per-feature model defaults, per spec §7.7.6.
+# Overridable in Settings → Models (UI) or by editing this file.
+
+[features]
+# High-stakes reasoning — Opus.
+case_brief                    = "claude-opus-4-7"
+irac_grade                    = "claude-opus-4-7"
+socratic_drill                = "claude-opus-4-7"
+cold_call                     = "claude-opus-4-7"
+rubric_from_memo              = "claude-opus-4-7"
+doctrinal_synthesis           = "claude-opus-4-7"
+hypo_generation               = "claude-opus-4-7"
+what_if_variations            = "claude-opus-4-7"
+hypo_from_variation           = "claude-opus-4-7"
+attack_sheet                  = "claude-opus-4-7"
+outline_hierarchical          = "claude-opus-4-7"
+emphasis_analysis             = "claude-opus-4-7"
+professor_profile_extraction  = "claude-opus-4-7"
+
+# High-volume structured output — Sonnet.
+flashcards                    = "claude-sonnet-4-6"
+mc_questions                  = "claude-sonnet-4-6"
+
+# Mechanical / small-context — Haiku.
+block_segmentation_fallback   = "claude-haiku-4-5"
+transcript_cleanup            = "claude-haiku-4-5"
+fuzzy_case_name_resolution    = "claude-haiku-4-5"
+
+[embeddings]
+default  = "voyage-3"
+provider = "voyage"
+fallback = "bm25"   # lexical when no Voyage key; UI shows reduced-quality badge.
+
+[thresholds]
+# Pre-flight cost estimate threshold (§7.7.5 C).
+preflight_cost_usd = 0.50
+# Budget alert trigger (§7.7.5 D).
+budget_alert_pct = 0.80

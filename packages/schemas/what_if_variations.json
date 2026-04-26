@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lawschool.local/schemas/what_if_variations.json",
+  "title": "WhatIfVariations",
+  "description": "Spec §5.10. N fact-variations on a case, each with the changed fact, the altered legal consequence, and the doctrinal reason.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "case_name",
+    "variations",
+    "sources"
+  ],
+  "properties": {
+    "case_name": {
+      "type": "string"
+    },
+    "variations": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "fact_changed",
+          "consequence",
+          "doctrinal_reason",
+          "tests_understanding_of"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fact_changed": {
+            "type": "string"
+          },
+          "consequence": {
+            "type": "string",
+            "description": "How the outcome would change."
+          },
+          "doctrinal_reason": {
+            "type": "string"
+          },
+          "tests_understanding_of": {
+            "type": "string",
+            "description": "The doctrine/distinction the variation is designed to probe."
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

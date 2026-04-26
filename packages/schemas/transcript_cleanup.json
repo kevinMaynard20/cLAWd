@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lawschool.local/schemas/transcript_cleanup.json",
+  "title": "CleanedTranscript",
+  "description": "Output of transcript_cleanup (spec §4.1.2). Takes raw Gemini rough text → cleaned full text + speaker-segmented segments with resolved mentions.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "cleaned_text",
+    "segments"
+  ],
+  "properties": {
+    "cleaned_text": {
+      "type": "string",
+      "description": "Joined, lightly-edited text with sentence fragments rejoined and obvious typos fixed. Speaker labels NOT inlined; those live in segments."
+    },
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "start_char",
+          "end_char",
+          "speaker",
+          "content",
+          "mentioned_cases",
+          "mentioned_rules",
+          "mentioned_concepts",
+          "sentiment_flags"
+        ],
+        "properties": {
+          "start_char": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end_char": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "speaker": {
+            "type": "string",
+            "enum": [
+              "professor",
+              "student",
+              "unknown"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "mentioned_cases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Canonical case names resolved against the corpus's known cases (spec §4.3.4)."
+          },
+          "mentioned_rules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mentioned_concepts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sentiment_flags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "disclaimed_as_not_testable",
+                "returned_to_multiple_times",
+                "professor_hypothetical",
+                "student_question_professor_engaged",
+                "rushed",
+                "emphasis_verbal_cue"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "unresolved_mentions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Case-ish strings that didn't resolve against the corpus. Surfaced to the UI for manual review (e.g., 'River Heights v Daton' not yet in any ingested book).",
+      "default": []
+    }
+  }
+}

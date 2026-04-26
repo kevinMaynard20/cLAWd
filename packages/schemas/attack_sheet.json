@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lawschool.local/schemas/attack_sheet.json",
+  "title": "AttackSheet",
+  "description": "Spec §5.9. One-page doctrinal cheat sheet for a topic — issue spotters, decision tree, rules with elements, traps.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "topic",
+    "issue_spotting_triggers",
+    "decision_tree",
+    "controlling_cases",
+    "rules_with_elements",
+    "exceptions",
+    "majority_minority_splits",
+    "common_traps",
+    "one_line_summaries",
+    "sources"
+  ],
+  "properties": {
+    "topic": {
+      "type": "string"
+    },
+    "issue_spotting_triggers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "trigger",
+          "points_to"
+        ],
+        "properties": {
+          "trigger": {
+            "type": "string",
+            "description": "fact-pattern cue"
+          },
+          "points_to": {
+            "type": "string",
+            "description": "the doctrine/rule/case the cue signals"
+          }
+        }
+      }
+    },
+    "decision_tree": {
+      "type": "object",
+      "description": "Nested if-then tree the student follows on exam day.",
+      "additionalProperties": true
+    },
+    "controlling_cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "case_name",
+          "one_line_holding"
+        ],
+        "properties": {
+          "case_name": {
+            "type": "string"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "one_line_holding": {
+            "type": "string"
+          },
+          "source_block_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "rules_with_elements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "rule",
+          "elements"
+        ],
+        "properties": {
+          "rule": {
+            "type": "string"
+          },
+          "elements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "majority_minority_splits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "issue",
+          "majority",
+          "minority"
+        ],
+        "properties": {
+          "issue": {
+            "type": "string"
+          },
+          "majority": {
+            "type": "string"
+          },
+          "minority": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "common_traps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Pulled from professor profile's stable_traps + topic-specific pitfalls."
+    },
+    "one_line_summaries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "3–8 one-line takeaways for night-before memorization."
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
