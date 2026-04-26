@@ -133,9 +133,18 @@ curl -fL --progress-bar "$ASSET_URL" -o "$DMG_PATH"
 # ---------- install ----------
 
 say "Mounting DMG …"
-MOUNT_OUT="$(hdiutil attach "$DMG_PATH" -nobrowse -readonly -quiet)"
-MOUNTPOINT="$(echo "$MOUNT_OUT" | awk '/\/Volumes\// {for(i=3;i<=NF;i++) printf "%s ", $i; print ""}' | head -n1 | sed 's/ *$//')"
-[[ -d "$MOUNTPOINT/$APP_NAME" ]] || die "DMG mounted but $APP_NAME not present at $MOUNTPOINT"
+# We need hdiutil's mount table on stdout to find the /Volumes/... path.
+# `-quiet` suppresses that table entirely (not just the "image scan"
+# progress) — we tried it first and ended up with an empty MOUNTPOINT.
+# Send hdiutil's chatty stderr to /dev/null instead so the user sees a
+# clean log; the mount-table itself goes to stdout.
+MOUNT_OUT="$(hdiutil attach "$DMG_PATH" -nobrowse -readonly 2>/dev/null)"
+MOUNTPOINT="$(echo "$MOUNT_OUT" | awk -F'\t' '/\/Volumes\// {print $NF}' | head -n1 | sed 's/[[:space:]]*$//')"
+if [[ -z "$MOUNTPOINT" || ! -d "$MOUNTPOINT/$APP_NAME" ]]; then
+    echo "${DIM}hdiutil output was:${RESET}" >&2
+    echo "$MOUNT_OUT" >&2
+    die "DMG mounted but $APP_NAME not present at ${MOUNTPOINT:-(no mountpoint)}"
+fi
 
 if [[ -d "$APP_PATH" ]]; then
     say "Replacing existing /Applications/$APP_NAME …"
