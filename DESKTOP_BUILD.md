@@ -57,37 +57,26 @@ For backend-only changes, re-run `bash scripts/build_python_bundle.sh` then
 using `make dev` from the repo root for development; the bundled `.app` is
 strictly a delivery format.
 
-## Known gaps (open work)
+## One gap left (distribution polish)
 
-This branch shipped the scaffolding + build pipeline. Two items still need
-attention before the .app is fully production-ready:
+**Code signing + notarization.** For ad-hoc local install (drag into
+`/Applications`, right-click → Open) Gatekeeper just nags once. For a real
+distribution flow, sign with an Apple Developer ID and run the Tauri
+notarize action. See Tauri's macOS distribution docs.
 
-1. **Static-export dynamic routes.** The 6 dynamic pages
-   (`/corpora/[id]`, `/artifacts/[id]`, etc.) need
-   `generateStaticParams` exports for Next 15's `output: "export"` mode.
-   Until then the export build either fails or produces a SPA shell that
-   only resolves dynamic routes via in-app `<Link>` navigation — typing
-   `/corpora/abc` directly in the URL bar won't work. For a one-user
-   desktop app where you always enter via the Get Started panel and click
-   through, this is acceptable; the user never types URLs.
+Closed:
 
-   Fix path: add `export function generateStaticParams() { return [] }`
-   to each `[param]/page.tsx` and configure Tauri to fall back to
-   `index.html` for unknown paths. ~30 minutes of work.
-
-2. **Real icons.** `apps/web/src-tauri/icons/` currently has 1×1 PNG
-   placeholders so the bundle pipeline doesn't reject the build. To swap
-   in real artwork:
-   ```
-   cd apps/web && pnpm tauri icon path/to/source-1024x1024.png
-   ```
-   Drops a full set (32×32, 128×128, 128×128@2x, .icns, .ico) into the
-   icons directory.
-
-3. **Code signing + notarization.** For ad-hoc local install (drag
-   /Applications, right-click → Open) Gatekeeper just nags once. For a
-   real distribution flow, sign with an Apple Developer ID and run the
-   Tauri notarize action. See Tauri's macOS distribution docs.
+- **Dynamic routes** — each `[param]/page.tsx` is now a tiny server
+  component that exports `generateStaticParams` (a single `__shell__`
+  placeholder) and renders the client UI from `ClientPage.tsx`. The
+  static-export build is verified clean — every dynamic route lists
+  under "prerendered as static HTML (uses generateStaticParams)" with the
+  expected `__shell__` shells in `out/`.
+- **Icons** — `scripts/generate_icons.py` renders the full Apple icon
+  matrix from a 1024×1024 master via PIL + `iconutil` (real ICNS, not a
+  PNG-renamed-icns). Design: deep-navy background, large cream serif §
+  flanked by gold `{}` brackets, "cLAWd" wordmark in the bottom safe
+  area. Re-run any time to tweak the design; the script is idempotent.
 
 ## How the shell handles cleanup
 
