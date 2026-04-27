@@ -155,6 +155,10 @@ function renderTypedArtifact(
       return renderSynthesisMarkdown(content, fallbackTitle);
     case "outline":
       return renderOutlineMarkdown(content, fallbackTitle);
+    case "flashcard_set":
+      return renderFlashcardsMarkdown(content, fallbackTitle);
+    case "mc_question_set":
+      return renderMcQuestionsMarkdown(content, fallbackTitle);
     default:
       return null;
   }
@@ -714,6 +718,137 @@ function SidePanel({ a }: { a: ArtifactDetail }) {
       </div>
     </>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Flashcards renderer (spec §5.3, schemas/flashcards.json).
+//
+// Each card becomes a Q→A block: bold question, indented answer, a small
+// uppercase "kind" chip (rule / case_to_doctrine / etc.), and the source
+// blocks as a footnote. We deliberately don't show the giant
+// `source_block_ids` arrays — they're long opaque hex strings that aren't
+// useful to a reading student.
+// ---------------------------------------------------------------------------
+
+function renderFlashcardsMarkdown(
+  content: Record<string, unknown>,
+  fallbackTitle: string,
+): string | null {
+  if (!content || typeof content !== "object") return null;
+  if (!Array.isArray(content.cards)) return null;
+
+  const out: string[] = [];
+  const topic =
+    (typeof content.topic === "string" && content.topic.trim()) ||
+    fallbackTitle;
+  out.push(`# ${topic}`);
+  out.push("");
+  out.push(`*${(content.cards as unknown[]).length} cards*`);
+  out.push("");
+
+  for (let i = 0; i < (content.cards as unknown[]).length; i++) {
+    const raw = (content.cards as unknown[])[i];
+    if (!raw || typeof raw !== "object") continue;
+    const card = raw as Record<string, unknown>;
+    const front = pickStr(card, "front", "question", "prompt");
+    const back = pickStr(card, "back", "answer", "response");
+    const kind =
+      typeof card.kind === "string" && card.kind.trim()
+        ? card.kind.replace(/_/g, " ")
+        : null;
+
+    out.push(`## ${i + 1}. ${front || "(no question)"}`);
+    if (kind) {
+      out.push(`*${kind}*`);
+    }
+    out.push("");
+    out.push(`> ${back || "(no answer)"}`);
+    out.push("");
+  }
+
+  return out.join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// MC questions renderer (spec §5.12, schemas/mc_questions.json).
+//
+// Each question shows the stem, the four lettered options, and a folded
+// "Show answer & explanation" section that lists the correct letter, the
+// rationale, and the per-distractor explanations. Folding keeps the page
+// usable for self-quizzing — the student can read all 10 questions before
+// peeking.
+// ---------------------------------------------------------------------------
+
+function renderMcQuestionsMarkdown(
+  content: Record<string, unknown>,
+  fallbackTitle: string,
+): string | null {
+  if (!content || typeof content !== "object") return null;
+  if (!Array.isArray(content.questions)) return null;
+
+  const out: string[] = [];
+  const topic =
+    (typeof content.topic === "string" && content.topic.trim()) ||
+    fallbackTitle;
+  out.push(`# ${topic}`);
+  out.push("");
+  out.push(`*${(content.questions as unknown[]).length} questions*`);
+  out.push("");
+
+  for (let i = 0; i < (content.questions as unknown[]).length; i++) {
+    const raw = (content.questions as unknown[])[i];
+    if (!raw || typeof raw !== "object") continue;
+    const q = raw as Record<string, unknown>;
+    const stem = pickStr(q, "stem", "question", "prompt");
+    out.push(`## ${i + 1}. ${stem || "(no stem)"}`);
+    out.push("");
+
+    const options = Array.isArray(q.options) ? q.options : [];
+    for (const opt of options) {
+      if (!opt || typeof opt !== "object") continue;
+      const o = opt as Record<string, unknown>;
+      const letter = pickStr(o, "letter");
+      const text = pickStr(o, "text");
+      out.push(`- **${letter || "?"}.** ${text || ""}`);
+    }
+    out.push("");
+
+    const correct = pickStr(q, "correct_answer", "answer");
+    const explanation = pickStr(q, "explanation", "rationale");
+    const doctrine = pickStr(q, "doctrine_tested", "doctrine");
+    const distractors = q.distractor_explanations;
+
+    out.push("<details>");
+    out.push("<summary>Show answer &amp; explanation</summary>");
+    out.push("");
+    if (correct) out.push(`**Correct:** ${correct}`);
+    if (doctrine) out.push(`**Doctrine tested:** ${doctrine}`);
+    if (explanation) {
+      out.push("");
+      out.push(explanation);
+    }
+    if (distractors && typeof distractors === "object") {
+      out.push("");
+      out.push("**Why the others are wrong:**");
+      const entries = Array.isArray(distractors)
+        ? distractors.map((d, idx) => [String.fromCharCode(65 + idx), d] as const)
+        : Object.entries(distractors as Record<string, unknown>);
+      for (const [letter, explanation] of entries) {
+        const text =
+          typeof explanation === "string"
+            ? explanation
+            : explanation && typeof explanation === "object"
+              ? pickStr(explanation as Record<string, unknown>, "text", "explanation")
+              : "";
+        if (text) out.push(`- **${letter}.** ${text}`);
+      }
+    }
+    out.push("");
+    out.push("</details>");
+    out.push("");
+  }
+
+  return out.join("\n");
 }
 
 // ---------------------------------------------------------------------------

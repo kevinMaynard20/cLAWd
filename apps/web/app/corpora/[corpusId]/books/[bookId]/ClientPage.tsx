@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
+import { FeatureRunOverlay, FeatureRunStatus } from "@/components/FeatureRunOverlay";
 import { PageNumberInput } from "@/components/PageNumberInput";
 import { Spinner } from "@/components/Spinner";
+import { useTopicPrompt } from "@/components/TopicPromptDialog";
 import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/format";
@@ -63,6 +65,9 @@ export default function BookDetailPage(props: {
   const [cases, setCases] = React.useState<CaseRow[] | null>(null);
 
   const [pendingAction, setPendingAction] = React.useState<string | null>(null);
+  const [runStatus, setRunStatus] = React.useState<FeatureRunStatus>(null);
+  const [runError, setRunError] = React.useState<string | null>(null);
+  const { promptForTopic, dialog: topicDialog } = useTopicPrompt();
 
   // Hydrate book metadata; default the page range to the whole book.
   React.useEffect(() => {
@@ -126,60 +131,75 @@ export default function BookDetailPage(props: {
     );
   }
 
-  const briefRange = async () => {
-    setPendingAction("brief");
+  // Wraps a long-running feature call so every entry point gets the same
+  // overlay + elapsed-time UI + inline error. `key` matches the per-button
+  // pendingAction string so the existing button-disable logic still works;
+  // `label` is the human-readable name shown in the overlay.
+  const runFeature = async (
+    key: string,
+    label: string,
+    call: () => Promise<{ artifact: { id: string } }>,
+  ) => {
+    setPendingAction(key);
+    setRunStatus({ label, startedAt: Date.now() });
+    setRunError(null);
     try {
-      const res = await api.post<{ artifact: { id: string } }>("/features/case-brief", {
-        corpus_id: corpusId,
-        book_id: bookId,
-        page_start: pageStart,
-        page_end: pageEnd,
-      });
+      const res = await call();
       router.push(`/artifacts/${res.artifact.id}`);
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Brief failed.");
+      setRunError(err instanceof ApiError ? err.message : `${label} failed.`);
       setPendingAction(null);
+      setRunStatus(null);
     }
   };
 
-  const flashcards = async () => {
-    setPendingAction("flashcards");
-    try {
-      const res = await api.post<{ artifact: { id: string } }>("/features/flashcards", {
+  const briefRange = () =>
+    runFeature("brief", "case brief", () =>
+      api.post<{ artifact: { id: string } }>("/features/case-brief", {
         corpus_id: corpusId,
         book_id: bookId,
         page_start: pageStart,
         page_end: pageEnd,
-        num_cards: 12,
-      });
-      router.push(`/artifacts/${res.artifact.id}`);
-    } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Flashcards failed.");
-      setPendingAction(null);
-    }
+      }),
+    );
+
+  const flashcards = async () => {
+    const topic = await promptForTopic({
+      title: "Generate flashcards",
+      description: `Pages ${pageStart}–${pageEnd}. The topic becomes the
+        headline label the cards are organized under.`,
+      placeholder: "e.g., Regulatory takings",
+    });
+    if (!topic) return;
+    void runFeature("flashcards", "flashcards", () =>
+      api.post<{ artifact: { id: string } }>("/features/flashcards", {
+        corpus_id: corpusId,
+        topic,
+        book_id: bookId,
+        page_start: pageStart,
+        page_end: pageEnd,
+      }),
+    );
   };
 
   const mcq = async () => {
-    setPendingAction("mcq");
-    try {
-      const topic = window.prompt("Topic for these MCQs?", "");
-      if (topic === null || topic.trim() === "") {
-        setPendingAction(null);
-        return;
-      }
-      const res = await api.post<{ artifact: { id: string } }>("/features/mc-questions", {
+    const topic = await promptForTopic({
+      title: "Generate MCQs",
+      description: `Pages ${pageStart}–${pageEnd}. 10 multiple-choice
+        questions on the topic you specify.`,
+      placeholder: "e.g., Adverse possession",
+    });
+    if (!topic) return;
+    void runFeature("mcq", "multiple-choice questions", () =>
+      api.post<{ artifact: { id: string } }>("/features/mc-questions", {
         corpus_id: corpusId,
         book_id: bookId,
         page_start: pageStart,
         page_end: pageEnd,
         topic,
         num_questions: 10,
-      });
-      router.push(`/artifacts/${res.artifact.id}`);
-    } catch (err) {
-      alert(err instanceof ApiError ? err.message : "MCQ generation failed.");
-      setPendingAction(null);
-    }
+      }),
+    );
   };
 
   const coldCallRandom = () => {
@@ -190,6 +210,12 @@ export default function BookDetailPage(props: {
 
   return (
     <main className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-6 py-10 lg:grid-cols-[1fr_300px]">
+      {topicDialog}
+      <FeatureRunOverlay
+        status={runStatus}
+        error={runError}
+        onDismissError={() => setRunError(null)}
+      />
       <section>
         <Link
           href={`/corpora/${corpusId}`}
@@ -258,6 +284,18 @@ export default function BookDetailPage(props: {
                 key={c.block_id}
                 row={c}
                 corpusId={corpusId}
+                disabled={pendingAction !== null}
+                onBrief={() =>
+                  runFeature("brief", `brief: ${c.case_name}`, () =>
+                    api.post<{ artifact: { id: string } }>(
+                      "/features/case-brief",
+                      {
+                        corpus_id: corpusId,
+                        block_id: c.block_id,
+                      },
+                    ),
+                  )
+                }
               />
             ))}
           </ul>
@@ -273,13 +311,13 @@ export default function BookDetailPage(props: {
         </p>
         <div className="mt-3 flex flex-col gap-2">
           <Button onClick={() => void briefRange()} disabled={pendingAction !== null}>
-            {pendingAction === "brief" ? "Briefing…" : "Brief first case in range"}
+            Brief first case in range
           </Button>
           <Button variant="outline" onClick={() => void flashcards()} disabled={pendingAction !== null}>
-            {pendingAction === "flashcards" ? "Generating…" : "Flashcards"}
+            Flashcards
           </Button>
           <Button variant="outline" onClick={() => void mcq()} disabled={pendingAction !== null}>
-            {pendingAction === "mcq" ? "Generating…" : "Multiple-choice questions"}
+            Multiple-choice questions
           </Button>
           <Button variant="outline" onClick={coldCallRandom} disabled={pendingAction !== null}>
             Cold-call random
@@ -293,26 +331,17 @@ export default function BookDetailPage(props: {
 function CaseListItem({
   row,
   corpusId,
+  disabled,
+  onBrief,
 }: {
   row: CaseRow;
   corpusId: string;
+  disabled: boolean;
+  // Lifted to the parent so brief generation runs through the same
+  // FeatureRunOverlay (with elapsed-time + visible inline error) instead
+  // of the WKWebView-eaten `alert()` we used to rely on.
+  onBrief: () => void;
 }) {
-  const router = useRouter();
-  const [busy, setBusy] = React.useState<string | null>(null);
-
-  const briefThis = async () => {
-    setBusy("brief");
-    try {
-      const res = await api.post<{ artifact: { id: string } }>("/features/case-brief", {
-        corpus_id: corpusId,
-        block_id: row.block_id,
-      });
-      router.push(`/artifacts/${res.artifact.id}`);
-    } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Brief failed.");
-      setBusy(null);
-    }
-  };
 
   return (
     <li className="grid grid-cols-[1fr_auto] items-start gap-3 px-4 py-3">
@@ -332,10 +361,10 @@ function CaseListItem({
         <Button
           size="sm"
           variant="outline"
-          disabled={busy !== null}
-          onClick={() => void briefThis()}
+          disabled={disabled}
+          onClick={onBrief}
         >
-          {busy === "brief" ? "…" : "Brief"}
+          Brief
         </Button>
         <Link href={`/socratic/${row.block_id}?corpus_id=${corpusId}`}>
           <Button size="sm" variant="ghost" className="w-full">
