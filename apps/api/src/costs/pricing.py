@@ -266,17 +266,15 @@ def _parse_pricing_document(
 
 
 def _default_pricing_path() -> Path:
-    """Walk up from this file to find `spec.md`, then use `<root>/config/pricing.toml`.
+    """Resolve `<root>/config/pricing.toml`.
 
-    Mirrors the repo-root detection in `data.db._resolve_db_path` so the two
-    agree on what "the repo" means.
+    Uses ``paths.repo_root`` so the bundled .app finds the file in
+    PyInstaller's ``_MEIPASS`` (where the spec ships ``config/`` as a
+    data file) instead of falling back to ``Path.cwd() == /``.
     """
-    here = Path(__file__).resolve()
-    for candidate in [here, *here.parents]:
-        if (candidate / "spec.md").exists():
-            return candidate / "config" / "pricing.toml"
-    # Fallback: cwd. If it's missing there too, `load` will WARN and fallback.
-    return Path.cwd() / "config" / "pricing.toml"
+    from paths import repo_root
+
+    return repo_root() / "config" / "pricing.toml"
 
 
 _singleton: PricingBook | None = None

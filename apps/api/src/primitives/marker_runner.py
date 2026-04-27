@@ -68,20 +68,21 @@ class MarkerResult:
 
 
 def _resolve_default_cache_dir() -> Path:
-    """Resolve `storage/marker_raw/` under the repo root.
+    """Resolve ``storage/marker_raw/``.
 
-    Mirrors `data.db._resolve_db_path`'s walk-up-to-spec.md pattern so tests
-    and dev both see the same directory without hardcoding absolute paths.
+    Honors ``LAWSCHOOL_MARKER_CACHE_DIR``. Otherwise routes through
+    ``paths.storage_root`` so the bundled .app gets
+    ``~/Library/Application Support/cLAWd/marker_raw/`` (writable) instead
+    of ``Path.cwd() / storage / marker_raw`` which evaluates to the
+    unwritable filesystem root inside the .app bundle.
     """
     override = os.environ.get("LAWSCHOOL_MARKER_CACHE_DIR")
     if override:
         return Path(override)
 
-    here = Path(__file__).resolve()
-    for candidate in [here, *here.parents]:
-        if (candidate / "spec.md").exists():
-            return candidate / "storage" / "marker_raw"
-    return Path.cwd() / "storage" / "marker_raw"
+    from paths import storage_root
+
+    return storage_root() / "marker_raw"
 
 
 # ---------------------------------------------------------------------------

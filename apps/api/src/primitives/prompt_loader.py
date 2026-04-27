@@ -55,17 +55,16 @@ class PromptTemplate:
 
 
 def _repo_root() -> Path:
-    """Walk up from this module until a directory containing `spec.md` is found.
+    """Resolve the read-only resource root (where `packages/prompts/` lives).
 
-    Mirrors the convention used in `data.db` and `costs.pricing` so all modules
-    agree on what "the repo" is. Callers can still pass an explicit
-    `prompts_dir` to override for tests.
+    Delegates to ``paths.repo_root`` which knows about PyInstaller's
+    ``_MEIPASS`` — without that, the bundled .app falls back to
+    ``Path.cwd() == /``, can't find any prompts, and every LLM call
+    explodes with FileNotFoundError on the first render.
     """
-    here = Path(__file__).resolve()
-    for candidate in [here, *here.parents]:
-        if (candidate / "spec.md").exists():
-            return candidate
-    return Path.cwd()
+    from paths import repo_root
+
+    return repo_root()
 
 
 def _default_prompts_dir() -> Path:

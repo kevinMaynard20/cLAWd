@@ -249,9 +249,9 @@ def test_storage_cleanup_dry_run_reports_orphans(
     """Seed an orphan upload by hand; cleanup with dry_run=true reports it
     but does not delete."""
     # Find the storage/uploads dir
-    from routes.system import _repo_root
+    from routes.uploads import _resolve_uploads_dir
 
-    uploads = _repo_root() / "storage" / "uploads" / "pdf"
+    uploads = _resolve_uploads_dir() / "pdf"
     uploads.mkdir(parents=True, exist_ok=True)
     orphan_path = uploads / ("a" * 64 + ".pdf")
     orphan_path.write_bytes(b"%PDF-1.4 orphan content")
@@ -281,9 +281,9 @@ def test_storage_cleanup_keeps_referenced_uploads(
     from sqlmodel import Session
 
     from data.models import Book, Corpus
-    from routes.system import _repo_root
+    from routes.uploads import _resolve_uploads_dir
 
-    uploads = _repo_root() / "storage" / "uploads" / "pdf"
+    uploads = _resolve_uploads_dir() / "pdf"
     uploads.mkdir(parents=True, exist_ok=True)
     sha = "b" * 64
     keeper = uploads / f"{sha}.pdf"

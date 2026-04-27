@@ -28,20 +28,18 @@ log = structlog.get_logger(__name__)
 
 
 def _resolve_db_path() -> Path:
-    """Resolve the SQLite DB path. Honors LAWSCHOOL_DB_PATH for tests; defaults
-    to `storage/lawschool.db` (content-addressed storage root, spec §7.2)."""
+    """Resolve the SQLite DB path. Honors LAWSCHOOL_DB_PATH for tests;
+    defaults to ``<storage_root>/lawschool.db`` (spec §7.2 — storage root
+    is repo-local in dev, ``~/Library/Application Support/cLAWd/`` in the
+    bundled .app)."""
 
     override = os.environ.get("LAWSCHOOL_DB_PATH")
     if override:
         return Path(override)
 
-    # Walk up from this file until we find the repo root (presence of spec.md).
-    here = Path(__file__).resolve()
-    for candidate in [here, *here.parents]:
-        if (candidate / "spec.md").exists():
-            return candidate / "storage" / "lawschool.db"
-    # Fallback: cwd
-    return Path.cwd() / "storage" / "lawschool.db"
+    from paths import storage_root
+
+    return storage_root() / "lawschool.db"
 
 
 # Module-level state: a single engine per process.

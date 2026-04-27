@@ -42,12 +42,14 @@ router = APIRouter(prefix="/system", tags=["system"])
 # ---------------------------------------------------------------------------
 
 
-def _repo_root() -> Path:
-    here = Path(__file__).resolve()
-    for candidate in [here, *here.parents]:
-        if (candidate / "spec.md").exists():
-            return candidate
-    return Path.cwd()
+def _storage_root() -> Path:
+    """Where writable state lives. Bundled .app: user data dir; dev:
+    `<repo>/storage/`. See ``paths.storage_root`` for the full rationale —
+    in short, ``Path.cwd()`` resolves to ``/`` in the .app and trying to
+    ``mkdir(/storage)`` is what 500'd this endpoint."""
+    from paths import storage_root
+
+    return storage_root()
 
 
 def _disk_stats(path: Path) -> dict[str, int]:
@@ -128,7 +130,7 @@ class HealthResponse(BaseModel):
 @router.get("/health", response_model=HealthResponse)
 def system_health(session: Session = Depends(get_session)) -> HealthResponse:
     """Rich health snapshot. Drives the dashboard's diagnostics card."""
-    storage_dir = _repo_root() / "storage"
+    storage_dir = _storage_root()
     storage_dir.mkdir(parents=True, exist_ok=True)
     disk = _disk_stats(storage_dir)
 
@@ -210,7 +212,12 @@ def storage_cleanup_route(
 
     Default `dry_run=True` — call again with `dry_run=false` to actually
     delete. The .part temp files (incomplete uploads) are always removed."""
-    uploads_root = _repo_root() / "storage" / "uploads"
+    # Honor LAWSCHOOL_UPLOADS_DIR (used by the bundled .app to redirect
+    # writes outside the read-only bundle) — the actual upload writer
+    # uses the same resolver, so cleanup must agree on the location.
+    from routes.uploads import _resolve_uploads_dir
+
+    uploads_root = _resolve_uploads_dir()
     if not uploads_root.exists():
         return CleanupResult(
             scanned=0, deleted=0, deleted_bytes=0, kept=0, paths_deleted=[], dry_run=dry_run

@@ -57,6 +57,14 @@ def _bootstrap_paths() -> None:
         os.environ.setdefault(
             "LAWSCHOOL_CREDENTIALS_FILE", str(data_root / "credentials.enc")
         )
+        # The PDF / text upload routes call _resolve_uploads_dir() which
+        # otherwise falls back to ``Path.cwd() / storage/uploads``. In the
+        # bundled .app cwd is the Tauri shell's working dir (typically `/`)
+        # — unwritable, so every upload returned 500. Anchor to the user's
+        # data dir explicitly.
+        os.environ.setdefault(
+            "LAWSCHOOL_UPLOADS_DIR", str(data_root / "uploads")
+        )
 
         # Force the encrypted-file credentials backend when bundled. The
         # macOS Keychain hangs indefinitely when a Tauri-spawned, ad-hoc-

@@ -65,13 +65,21 @@ def _free_disk_bytes(target_dir: Path) -> int:
 
 
 def _resolve_uploads_dir() -> Path:
-    """Find `storage/uploads/` relative to the repo root (`spec.md` presence).
-    Mirrors the lookup pattern in `data.db`."""
-    here = Path(__file__).resolve()
-    for candidate in [here, *here.parents]:
-        if (candidate / "spec.md").exists():
-            return candidate / "storage" / "uploads"
-    return Path.cwd() / "storage" / "uploads"
+    """Find `storage/uploads/`.
+
+    Honors ``LAWSCHOOL_UPLOADS_DIR`` (used by tests + as a belt-and-suspenders
+    override in the bundled .app entry script). Otherwise routes through
+    ``paths.storage_root`` so dev gets ``<repo>/storage/uploads`` and the
+    bundled .app gets ``~/Library/Application Support/cLAWd/uploads`` —
+    the previous walk-up + ``Path.cwd()`` fallback evaluated to ``/storage``
+    inside the .app and 500'd every upload.
+    """
+    override = os.environ.get("LAWSCHOOL_UPLOADS_DIR", "").strip()
+    if override:
+        return Path(override)
+    from paths import storage_root
+
+    return storage_root() / "uploads"
 
 
 class UploadedFileDTO(BaseModel):

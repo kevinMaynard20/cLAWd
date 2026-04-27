@@ -26,6 +26,7 @@ import re
 import tomllib
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -136,16 +137,12 @@ def _make_client(api_key: str) -> Any:
 # ---------------------------------------------------------------------------
 
 
-def _repo_root() -> Path:
-    here = Path(__file__).resolve()
-    for candidate in [here, *here.parents]:
-        if (candidate / "spec.md").exists():
-            return candidate
-    return Path.cwd()
-
-
 def _models_config_path() -> Path:
-    return _repo_root() / "config" / "models.toml"
+    """Resolve ``<root>/config/models.toml``. Uses ``paths.repo_root``
+    so the bundled .app finds the file inside PyInstaller's ``_MEIPASS``."""
+    from paths import repo_root
+
+    return repo_root() / "config" / "models.toml"
 
 
 def _feature_model_from_config(feature: str) -> str | None:
@@ -471,9 +468,8 @@ def _repair_candidate(
                     var["id"] = f"v{i}"
         return candidate
 
-    if template_name != "case_brief":
-        return candidate
-
+    # Build the fallback id list once — used by both case_brief and the
+    # flashcards/mc_questions per-item repairs below.
     fallback_ids: list[str] = []
     blocks = getattr(retrieval, "blocks", None) if retrieval is not None else None
     if blocks:
@@ -482,11 +478,92 @@ def _repair_candidate(
             if isinstance(bid, str) and bid:
                 fallback_ids.append(bid)
 
+    # Flashcards: schema requires every card's `source_block_ids` to be
+    # `minItems: 1`, but Opus / Sonnet drop the field entirely on most cards
+    # while emitting their own `sources` field (also a list of block ids,
+    # just under a different name). Reuse the card's own `sources` first —
+    # it's the model's stated citation set, scoped to that specific card.
+    # Only fall back to a SINGLE retrieval id when the card has no signal
+    # at all; previously this dumped the entire ~100-block retrieval set
+    # into every card, blowing up the JSON payload and making the rendered
+    # artifact unreadable.
+    if template_name == "flashcards":
+        cards = candidate.get("cards")
+        if isinstance(cards, list):
+            single_fallback = fallback_ids[:1] if fallback_ids else ["unknown"]
+            for card in cards:
+                if not isinstance(card, dict):
+                    continue
+                ids = card.get("source_block_ids")
+                if isinstance(ids, list) and ids:
+                    continue  # model emitted its own; trust it
+                # Try the card's own `sources` list before falling back to
+                # the retrieval set — it's per-card and short.
+                own_sources = card.get("sources")
+                if isinstance(own_sources, list):
+                    cleaned = [
+                        s for s in own_sources if isinstance(s, str) and s
+                    ]
+                    if cleaned:
+                        card["source_block_ids"] = cleaned
+                        continue
+                card["source_block_ids"] = list(single_fallback)
+        return candidate
+
+    # MC questions: schema declares `id` as a string (`"q1"`, `"q2"`, …)
+    # but the model regularly emits an integer for the last few items in a
+    # set (observed 2026-04 with mc_questions@1.x: `id: 10`). Coerce ints
+    # to their string form so validation passes; the retry loop's
+    # corrective prompt was burning a turn on this benign type drift.
+    if template_name == "mc_questions":
+        questions = candidate.get("questions")
+        if isinstance(questions, list):
+            for q in questions:
+                if not isinstance(q, dict):
+                    continue
+                qid = q.get("id")
+                if isinstance(qid, int):
+                    q["id"] = str(qid)
+                elif qid is None:
+                    # Backfill missing ids from index — same pattern as
+                    # `what_if_variations` above.
+                    q["id"] = f"q{questions.index(q) + 1}"
+        return candidate
+
+    if template_name != "case_brief":
+        return candidate
+
     # Layer 2a — Claim-shaped fields: coerce STRUCTURE only.
+    # Recent Opus 4.x output drift (observed 2026-04 with case_brief@1.2.0):
+    # the model returns a LIST of Claim objects for fields the schema declares
+    # as a SINGLE Claim (e.g., `significance: [{text, source_block_ids}, …]`).
+    # Schema validation rejects this as `not of type 'object'`. Collapse the
+    # list to a single Claim by joining the `.text` values with `\n\n` and
+    # unioning the `source_block_ids` so we don't lose citations.
     for key in _CASE_BRIEF_CLAIM_FIELDS:
-        if key in candidate:
+        if key not in candidate:
+            continue
+        v = candidate[key]
+        if isinstance(v, list) and v and all(isinstance(x, dict) for x in v):
+            merged_text = "\n\n".join(
+                str(x.get("text", "")).strip() for x in v if x.get("text")
+            )
+            merged_ids: list[str] = []
+            seen: set[str] = set()
+            for x in v:
+                ids = x.get("source_block_ids") or []
+                if isinstance(ids, list):
+                    for bid in ids:
+                        if isinstance(bid, str) and bid and bid not in seen:
+                            merged_ids.append(bid)
+                            seen.add(bid)
+            candidate[key] = {
+                "text": merged_text,
+                "source_block_ids": merged_ids or list(fallback_ids) or ["unknown"],
+            }
+        else:
             candidate[key] = _coerce_claim_shape(
-                candidate[key], fallback_source_ids=fallback_ids
+                v, fallback_source_ids=fallback_ids
             )
 
     # Layer 2b — array-of-Claim fields: coerce each item's structure. The
@@ -509,13 +586,17 @@ def _repair_candidate(
 
     # Layer 2c — string|null fields the model sometimes wraps as a Claim.
     # `where_this_fits` is described as plain doctrinal-arc context but the
-    # model treats it like every other narrative field and returns a Claim.
-    # Extract `.text` so schema validation passes; the citation context is
-    # already covered by the per-Claim source_block_ids elsewhere.
+    # model treats it like every other narrative field and returns a Claim
+    # — and increasingly, a LIST of Claims. Both shapes need to flatten to
+    # a single string for schema compliance.
     for key in ("where_this_fits", "likely_emphasis"):
         v = candidate.get(key)
         if isinstance(v, dict) and isinstance(v.get("text"), str):
             candidate[key] = v["text"]
+        elif isinstance(v, list) and v and all(isinstance(x, dict) for x in v):
+            candidate[key] = "\n\n".join(
+                str(x.get("text", "")).strip() for x in v if x.get("text")
+            )
 
     # case_name missing — pull from the case_opinion block's metadata when
     # available (we know which block fed the prompt). High-signal: the case
@@ -933,6 +1014,33 @@ def generate(req: GenerateRequest) -> GenerateResult:
         except ValueError as exc:
             prior_output = raw_text
             last_errors = [f"- (root): {exc}"]
+            # Persist the raw response to disk so we can diagnose recurring
+            # parse failures (especially in the bundled .app where stdout is
+            # routed to ~/Library/Logs/cLAWd/sidecar.log and not interactive).
+            # Same parse error repeating at the exact same character offset
+            # almost always means the case text contains something that
+            # consistently confuses the model's JSON formatting (unescaped
+            # quote, embedded code fence, etc.) — having the body lets us
+            # see the offending bytes instead of guessing.
+            try:
+                from paths import user_data_dir
+
+                debug_dir = user_data_dir() / "debug" / "llm_parse_failures"
+                debug_dir.mkdir(parents=True, exist_ok=True)
+                stamp = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%S")
+                debug_path = (
+                    debug_dir
+                    / f"{stamp}_{template.identifier.replace('@', '_v')}_attempt{attempt}.txt"
+                )
+                debug_path.write_text(
+                    f"# parse error: {exc}\n# template: {template.identifier}\n"
+                    f"# attempt: {attempt}\n# response length: {len(raw_text)} chars\n\n"
+                    + raw_text,
+                    encoding="utf-8",
+                )
+            except Exception:
+                # Diagnostic write must never break the retry path.
+                pass
             log.info(
                 "generate_parse_retry",
                 template=template.identifier,

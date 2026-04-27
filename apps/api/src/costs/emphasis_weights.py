@@ -131,21 +131,12 @@ def _coerce_int(value: Any, *, field: str) -> int:
 # ---------------------------------------------------------------------------
 
 
-def _repo_root() -> Path:
-    """Walk up to the repo root (the directory containing ``spec.md``).
-
-    Matches the convention used by :mod:`data.db`, :mod:`costs.pricing`, and
-    :mod:`primitives.prompt_loader` so every module agrees on "the repo."
-    """
-    here = Path(__file__).resolve()
-    for candidate in [here, *here.parents]:
-        if (candidate / "spec.md").exists():
-            return candidate
-    return Path.cwd()
-
-
 def _default_weights_path() -> Path:
-    return _repo_root() / "config" / "emphasis_weights.toml"
+    """Resolve ``<root>/config/emphasis_weights.toml``. Uses
+    ``paths.repo_root`` so the bundled .app finds it inside ``_MEIPASS``."""
+    from paths import repo_root
+
+    return repo_root() / "config" / "emphasis_weights.toml"
 
 
 def _parse_weights_document(data: dict[str, Any]) -> EmphasisWeights:
