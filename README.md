@@ -1,26 +1,47 @@
-# Law School Study System
+# cLAWd — Law School Study System
 
-Local-first study system for 1L doctrinal courses. Ingest a textbook once, interact with it forever: case briefs, Socratic drills, IRAC grading, transcript-to-emphasis mapping.
+Local-first study system for 1L doctrinal courses. Ingest a textbook once, interact with it forever: case briefs, flashcards, multiple-choice questions, multi-case synthesis, attack sheets, hierarchical outlines, IRAC grading, Socratic and cold-call drills, transcript-to-emphasis mapping.
 
-**Canonical spec:** `spec.md`. **Build progress:** `CHECKLIST.md`. **Working agreement:** `CLAUDE.md`.
+> **Canonical spec:** `spec.md`. **Build progress:** `CHECKLIST.md`. **Working agreement:** `CLAUDE.md`.
 
-## Install (Mac)
+## Install on a Mac (~2 minutes)
 
-One paste in your terminal:
+You don't need to know any code. You don't need Python, Node, Rust, or Homebrew.
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/kevinMaynard20/cLAWd/main/install.sh | bash
-```
+1. **Open Terminal.** Press <kbd>⌘ Space</kbd>, type `Terminal`, hit <kbd>Return</kbd>.
 
-Downloads the latest pre-built `.dmg` from [Releases](https://github.com/kevinMaynard20/cLAWd/releases/latest), copies `cLAWd.app` into `/Applications`, and launches it. ~150 MB. No Python, Node, or Rust needed on your Mac.
+2. **Paste this single line** into the Terminal window and press <kbd>Return</kbd>:
 
-Prefer to download manually? Grab the `.dmg` for your architecture (`aarch64` for Apple Silicon, `x86_64` for Intel) from the [latest release page](https://github.com/kevinMaynard20/cLAWd/releases/latest), double-click, drag `cLAWd.app` to `/Applications`.
+   ```sh
+   curl -fsSL https://raw.githubusercontent.com/kevinMaynard20/cLAWd/main/install.sh | bash
+   ```
 
-User data lives at `~/Library/Application Support/cLAWd/`. Closing the window kills the backend cleanly. The first launch asks for your Anthropic API key (stored in macOS Keychain).
+3. **Wait.** The installer will:
+   - Detect whether your Mac is Apple Silicon or Intel.
+   - Download the matching `.dmg` (~150 MB) into your `Downloads` folder.
+   - Mount it, copy `cLAWd.app` into `/Applications`, eject it.
+   - Strip the macOS "downloaded from internet" warning.
+   - Launch the app.
 
-## Status
+   You may be prompted for your Mac password once (so it can copy into `/Applications`). That's normal.
 
-Phase 0 (bootstrap) in progress. No features are working yet.
+4. **In the app**, paste your Anthropic API key when asked. Don't have one? Click "How do I get this?" — there's a short walkthrough video in-app.
+
+5. **Click `Upload`** in the top bar to add a casebook PDF.
+
+That's it. To re-install or update later, paste the same one-liner — it overwrites cleanly.
+
+### Where things live on your Mac
+
+- **App:** `/Applications/cLAWd.app` — drag to Trash to uninstall.
+- **Your data** (database, uploads, generated artifacts, encrypted API key): `~/Library/Application Support/cLAWd/`.
+- **Logs** (if anything goes wrong): `~/Library/Logs/cLAWd/sidecar.log`.
+
+Closing the window quits the app cleanly. The bundled backend gets killed on close — no orphan processes, no stuck ports.
+
+### Manual download (no Terminal)
+
+Prefer not to paste into Terminal? Open the [latest release page](https://github.com/kevinMaynard20/cLAWd/releases/latest), download the `.dmg` for your architecture (`aarch64` = Apple Silicon, `x86_64` = Intel Mac), double-click it, and drag `cLAWd.app` to `/Applications`.
 
 ## Stack
 
