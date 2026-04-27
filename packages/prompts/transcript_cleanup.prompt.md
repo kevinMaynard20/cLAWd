@@ -17,8 +17,16 @@ inputs:
   lecture_topic: "str | null"
 output_schema: schemas/transcript_cleanup.json
 model_defaults:
-  model: claude-haiku-4-5
-  max_tokens: 8000
+  # Sonnet 4.6 (not Haiku) because real lectures hit Haiku's 16K-token
+  # output ceiling. Diagnostic captures from 2026-04 showed a single 90-min
+  # lecture producing 62K+ chars of output before truncation — Haiku
+  # genuinely can't fit it. Sonnet 4.6 supports 64K output, giving ~4×
+  # more headroom. This is a mechanical, high-volume task where the
+  # capability gap from Haiku to Sonnet is small but the output budget
+  # gap is decisive. Truly long lectures (3 hr+) still won't fit; the
+  # spec'd follow-up is input-chunking.
+  model: claude-sonnet-4-6
+  max_tokens: 64000
   temperature: 0.1
 ---
 
@@ -102,3 +110,16 @@ Hard rules:
 ## Output
 
 Produce JSON matching `schemas/transcript_cleanup.json`. Return JSON only.
+
+The top-level keys are `cleaned_text` (string) and `segments` (array). Each
+segment is an object with EXACTLY these field names:
+
+- `start_char` (integer, offset into `cleaned_text`)
+- `end_char` (integer, offset into `cleaned_text`)
+- `speaker` (one of `professor`, `student`, `unknown`)
+- `content` (string — the segment's spoken text; **call this field
+  `content`, not `text`, even though `text` is the more common convention**)
+- `mentioned_cases` (array of canonical case names, possibly empty)
+- `mentioned_rules` (array of strings, possibly empty)
+- `mentioned_concepts` (array of strings, possibly empty)
+- `sentiment_flags` (array of the tags listed in rule 4 above, possibly empty)

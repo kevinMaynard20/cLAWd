@@ -15,7 +15,7 @@ inputs:
 output_schema: schemas/block_classification.json
 model_defaults:
   model: claude-haiku-4-5
-  max_tokens: 400
+  max_tokens: 16000
   temperature: 0
 ---
 

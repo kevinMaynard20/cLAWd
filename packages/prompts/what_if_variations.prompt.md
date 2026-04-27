@@ -12,7 +12,7 @@ inputs:
 output_schema: schemas/what_if_variations.json
 model_defaults:
   model: claude-opus-4-7
-  max_tokens: 3000
+  max_tokens: 32000
   temperature: 0.4
 ---
 

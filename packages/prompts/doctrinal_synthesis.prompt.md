@@ -13,7 +13,7 @@ inputs:
 output_schema: schemas/synthesis.json
 model_defaults:
   model: claude-opus-4-7
-  max_tokens: 5000
+  max_tokens: 32000
   temperature: 0.2
 ---
 

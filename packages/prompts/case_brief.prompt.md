@@ -14,7 +14,11 @@ inputs:
 output_schema: schemas/case_brief.json
 model_defaults:
   model: claude-opus-4-7
-  max_tokens: 4000
+  # Set to Opus 4.7's full output budget. Project policy (2026-04): every
+  # prompt is set to its model's max so user inputs (long lectures, dense
+  # casebooks) never silently truncate mid-JSON. The model only emits what
+  # it needs; this is a budget, not a target.
+  max_tokens: 32000
   temperature: 0.2
 ---
 

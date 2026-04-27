@@ -16,7 +16,7 @@ inputs:
 output_schema: schemas/socratic_turn.json
 model_defaults:
   model: claude-opus-4-7
-  max_tokens: 1200
+  max_tokens: 32000
   temperature: 0.3
 ---
 

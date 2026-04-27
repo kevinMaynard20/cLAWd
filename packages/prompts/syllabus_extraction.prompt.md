@@ -14,7 +14,7 @@ inputs:
 output_schema: schemas/syllabus_extraction.json
 model_defaults:
   model: claude-sonnet-4-6
-  max_tokens: 6000
+  max_tokens: 64000
   temperature: 0.1
 ---
 
