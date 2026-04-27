@@ -14,10 +14,16 @@ edition = "2021"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# `devtools` enables right-click → Inspect Element in release builds. The
+# WebView console is the only place where CSP / CORS / JS upload errors
+# surface — without it, "network error" messages have no diagnostic trail
+# in production. The runtime cost is negligible (a feature flag in WebKit).
+tauri = { version = "2", features = ["devtools"] }
 tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# `dirs` for ~/Library/Logs path resolution (sidecar log writer).
+dirs = "5"
 
 # Compiler tuning. The shell is tiny; aggressive lto pays off with a
 # smaller .app and a snappier first launch.

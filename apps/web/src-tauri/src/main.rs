@@ -53,15 +53,33 @@ fn spawn_backend(app: &tauri::AppHandle) -> Result<CommandChild, String> {
         .spawn()
         .map_err(|e| format!("failed to spawn backend: {e}"))?;
 
-    // Drain the sidecar's stdout/stderr in the background so the OS pipe
-    // doesn't fill up and block the backend on its own logging. We don't
-    // surface the lines to the WebView — the FastAPI instance writes its
-    // own structured logs to a file under `~/Library/Logs/cLAWd/`.
+    // Drain the sidecar's stdout/stderr to ~/Library/Logs/cLAWd/sidecar.log.
+    // Without this, uvicorn's per-request access log goes to a closed pipe
+    // and we lose all visibility into what the bundled backend actually
+    // sees during a request. (FastAPI's structured logger writes to its
+    // own file but doesn't include the wire-level access log we need to
+    // diagnose CORS / preflight / multipart issues.)
     tauri::async_runtime::spawn(async move {
+        use std::io::Write;
+        let log_path = dirs::home_dir()
+            .map(|h| h.join("Library/Logs/cLAWd/sidecar.log"))
+            .unwrap_or_else(|| std::path::PathBuf::from("/tmp/cLAWd-sidecar.log"));
+        if let Some(parent) = log_path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let mut f = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)
+            .ok();
         while let Some(event) = rx.recv().await {
             match event {
                 CommandEvent::Stdout(line) | CommandEvent::Stderr(line) => {
-                    let _ = String::from_utf8_lossy(&line);
+                    if let Some(f) = f.as_mut() {
+                        let _ = f.write_all(&line);
+                        let _ = f.write_all(b"\n");
+                        let _ = f.flush();
+                    }
                 }
                 CommandEvent::Terminated(_) => break,
                 _ => {}
