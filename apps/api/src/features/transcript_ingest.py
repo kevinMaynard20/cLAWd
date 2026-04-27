@@ -484,13 +484,79 @@ def _call_cleanup_llm(
     try:
         parsed = _parse_json_payload(raw_response_text)
     except ValueError as exc:
+        # Mirror the diagnostic capture from `primitives.generate`: write the
+        # raw response to ~/Library/Application Support/cLAWd/debug/ so a
+        # parse failure in the bundled .app is recoverable. Without this we
+        # only know "transcript_cleanup parse failed" — useless for fixing
+        # whatever the LLM actually emitted.
+        try:
+            from datetime import UTC
+            from paths import user_data_dir
+
+            debug_dir = user_data_dir() / "debug" / "llm_parse_failures"
+            debug_dir.mkdir(parents=True, exist_ok=True)
+            stamp = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%S")
+            debug_path = (
+                debug_dir
+                / f"{stamp}_transcript_cleanup_v{template.version}.txt"
+            )
+            debug_path.write_text(
+                f"# parse error: {exc}\n# template: {template.identifier}\n"
+                f"# response length: {len(raw_response_text)} chars\n"
+                f"# input tokens: {input_tokens}, output tokens: {output_tokens}\n\n"
+                + raw_response_text,
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
         raise TranscriptIngestError(
             f"transcript_cleanup response was not valid JSON: {exc}"
         ) from None
 
+    # Coerce common Sonnet-vs-Haiku field-name drift before strict validation.
+    # The schema names the segment text field `content`; Sonnet 4.6 has been
+    # observed to emit `text` instead (the more common LLM convention). Both
+    # carry identical semantics, so renaming preserves meaning. Apply to every
+    # segment so a future template version that adds segments doesn't have
+    # to re-implement the mapping.
+    if isinstance(parsed, dict) and isinstance(parsed.get("segments"), list):
+        for seg in parsed["segments"]:
+            if isinstance(seg, dict) and "content" not in seg and "text" in seg:
+                seg["content"] = seg.pop("text")
+
     try:
         jsonschema.validate(parsed, schema)
     except jsonschema.ValidationError as exc:
+        # Capture the parsed-but-schema-failing response too — same dir as
+        # parse failures, different prefix. We dump the *parsed* JSON
+        # (post-coercion) plus the original raw bytes so we can see whether
+        # the issue is a missed field-name drift, a structural drift, or
+        # something at the JSON-source level the parser silently accepted.
+        try:
+            from datetime import UTC
+            from paths import user_data_dir
+
+            debug_dir = user_data_dir() / "debug" / "llm_parse_failures"
+            debug_dir.mkdir(parents=True, exist_ok=True)
+            stamp = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%S")
+            debug_path = (
+                debug_dir
+                / f"{stamp}_transcript_cleanup_v{template.version}_schema.txt"
+            )
+            debug_path.write_text(
+                f"# schema error: {exc.message}\n"
+                f"# path: {list(exc.absolute_path)}\n"
+                f"# template: {template.identifier}\n"
+                f"# response length: {len(raw_response_text)} chars\n"
+                f"# input tokens: {input_tokens}, output tokens: {output_tokens}\n\n"
+                f"# === parsed JSON (post-coercion) ===\n"
+                + json.dumps(parsed, indent=2)[:50000]
+                + "\n\n# === raw response ===\n"
+                + raw_response_text,
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
         raise TranscriptIngestError(
             f"transcript_cleanup response did not match schema: {exc.message}"
         ) from None

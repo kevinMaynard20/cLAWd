@@ -20,7 +20,10 @@ def test_loads_case_brief_template() -> None:
     assert t.version == "1.2.0"
     assert t.output_schema_path == "schemas/case_brief.json"
     assert t.model_defaults["model"] == "claude-opus-4-7"
-    assert t.model_defaults["max_tokens"] == 4000
+    # Project policy: every prompt's max_tokens is set to the model's full
+    # output budget (Opus 32K / Sonnet 64K / Haiku 16K). Don't reintroduce
+    # smaller defaults — see feedback_no_token_caps memory.
+    assert t.model_defaults["max_tokens"] == 32000
     assert "FIRAC" in (t.description or "")
     # The body must contain the case-brief specific section headers but NOT
     # the frontmatter delimiters.
