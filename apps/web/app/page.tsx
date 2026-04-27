@@ -4,6 +4,7 @@ import Link from "next/link";
 import * as React from "react";
 import { useEffect, useState } from "react";
 
+import { SpaFallbackRouter } from "@/components/SpaFallbackRouter";
 import { Spinner } from "@/components/Spinner";
 import { api, ApiError } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/format";
@@ -32,6 +33,21 @@ type CorpusSummary = {
 };
 
 export default function Home() {
+  // Tauri's WKURLSchemeHandler falls back to `index.html` (this page) for
+  // any URL that doesn't match a built file — including every dynamic
+  // route like `/corpora/<id>` or `/cold-call/<id>` (those only have a
+  // `__shell__.html` placeholder that's not addressable by real id). The
+  // SpaFallbackRouter inspects the pathname at runtime and renders the
+  // matching shell ClientPage; only when the pathname is actually `/` do
+  // we fall through to render the real dashboard below.
+  return (
+    <SpaFallbackRouter>
+      <Dashboard />
+    </SpaFallbackRouter>
+  );
+}
+
+function Dashboard() {
   const [corpora, setCorpora] = useState<CorpusSummary[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

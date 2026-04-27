@@ -3,9 +3,10 @@ import ClientPage from "./ClientPage";
 // Static export shim. With Next 15's `output: "export"` (Tauri build), the
 // build needs a concrete list of params to pre-render. Real corpus ids are
 // generated at runtime in the local SQLite DB, so we emit a single
-// `__shell__` placeholder. The Tauri WebView always enters via the
-// dashboard and follows <Link> clicks, so the client router handles every
-// real URL — the placeholder HTML is never visited directly.
+// `__shell__` placeholder. `dynamicParams = true` is what lets Next's
+// client router render the shell for any param at runtime — without it,
+// any unknown id 404s, and Tauri's WebView serves /index.html as the
+// fallback (visible to the user as "the page snapped back to dashboard").
 export function generateStaticParams() {
   return [{ corpusId: "__shell__" }];
 }
